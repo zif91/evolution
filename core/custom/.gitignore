@@ -1,3 +1,5 @@
 *
 !**/*.example
 !.gitignore
+!packages/
+!packages/**
