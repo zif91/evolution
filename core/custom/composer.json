@@ -1,0 +1,16 @@
+{
+    "name": "evolutioncms/custom",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "EvolutionCMS\\AiAssistant\\": "packages/ai-assistant/src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "EvolutionCMS\\AiAssistant\\AiAssistantServiceProvider"
+            ]
+        }
+    }
+}
