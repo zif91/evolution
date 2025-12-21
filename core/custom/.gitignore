@@ -3,3 +3,4 @@
 !.gitignore
 !packages/
 !packages/**
+!composer.json

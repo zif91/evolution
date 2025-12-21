@@ -20,40 +20,72 @@ A Shopify Sidekick-like AI assistant for Evolution CMS that helps you manage you
 
 ## Installation
 
-### Method 1: Via Composer (Recommended)
-
-```bash
-composer require evocms/ai-assistant
-php artisan package:install ai-assistant
-```
-
-### Method 2: Manual Installation
+### Method 1: Via Artisan (Recommended)
 
 1. Copy the `ai-assistant` folder to `core/custom/packages/`
 
-2. Register the service provider in `core/custom/config/app.php`:
+2. Register the package in `core/custom/composer.json`:
+   ```json
+   {
+       "name": "evolutioncms/custom",
+       "autoload": {
+           "psr-4": {
+               "EvolutionCMS\\AiAssistant\\": "packages/ai-assistant/src/"
+           }
+       },
+       "extra": {
+           "laravel": {
+               "providers": [
+                   "EvolutionCMS\\AiAssistant\\AiAssistantServiceProvider"
+               ]
+           }
+       }
+   }
+   ```
+
+3. Discover the package and run installation:
+   ```bash
+   php artisan package:discover
+   php artisan ai-assistant:install
+   ```
+
+### Method 2: Quick Install (Single Command)
+
+If you've already copied the package to `core/custom/packages/`:
+
+```bash
+php artisan package:installautoload "EvolutionCMS\\AiAssistant\\" "packages/ai-assistant/src/"
+php artisan package:discover
+php artisan ai-assistant:install
+```
+
+### Method 3: Manual Installation
+
+1. Copy the `ai-assistant` folder to `core/custom/packages/`
+
+2. Run migrations:
+   ```bash
+   php artisan migrate --path=core/custom/packages/ai-assistant/migrations
+   ```
+
+3. Copy assets manually:
+   ```bash
+   cp -r core/custom/packages/ai-assistant/public/* assets/ai-assistant/
+   ```
+
+4. Install the plugin manually:
+   - Go to Elements → Plugins → New Plugin
+   - Name: `AI Assistant`
+   - Paste the content from `assets/plugins/ai_assistant.php`
+   - Enable events: `OnManagerFrameLoader`, `OnManagerTopPrerender`
+
+5. Register the service provider in `core/custom/config/app.php`:
    ```php
    'providers' => [
        // ...
        EvolutionCMS\AiAssistant\AiAssistantServiceProvider::class,
    ],
    ```
-
-3. Run migrations:
-   ```bash
-   php artisan migrate
-   ```
-
-4. Copy assets:
-   ```bash
-   php artisan vendor:publish --tag=ai-assistant
-   ```
-
-5. Install the plugin:
-   - Go to Elements → Plugins → New Plugin
-   - Name: `AI Assistant`
-   - Paste the content from `assets/plugins/ai_assistant.php`
-   - Enable events: `OnManagerFrameLoader`, `OnManagerTopPrerender`
 
 ## Configuration
 

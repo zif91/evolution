@@ -43,19 +43,36 @@ class ApiController extends Controller
         $history = session('ai_assistant_history', []);
         $this->aiService->setHistory($history);
 
-        // Get AI response
+        // Get AI response - with tool execution loop
         $response = $this->aiService->chat($message, $context);
+        $executedActions = [];
+        $maxIterations = 5; // Prevent infinite loops
+        $iteration = 0;
+
+        // Tool execution loop
+        while (!empty($response['actions']) && $iteration < $maxIterations) {
+            $iteration++;
+            $toolResults = [];
+
+            // Execute all requested tools
+            foreach ($response['actions'] as $action) {
+                $result = $this->executeAction($action);
+                $executedActions[] = $result;
+
+                // Format tool result for AI
+                $toolResults[] = [
+                    'tool_call_id' => $action['id'] ?? $action['name'],
+                    'name' => $action['name'],
+                    'result' => json_encode($result, JSON_UNESCAPED_UNICODE),
+                ];
+            }
+
+            // Send tool results back to AI for final response
+            $response = $this->aiService->continueWithToolResults($toolResults);
+        }
 
         // Save updated history
         session(['ai_assistant_history' => $this->aiService->getHistory()]);
-
-        // Execute any actions returned by AI
-        $executedActions = [];
-        if (!empty($response['actions'])) {
-            foreach ($response['actions'] as $action) {
-                $executedActions[] = $this->executeAction($action);
-            }
-        }
 
         return response()->json([
             'success' => $response['success'] ?? true,
@@ -151,6 +168,56 @@ class ApiController extends Controller
                     'action' => $name,
                     'success' => true,
                     'data' => $this->getCheckpointsList($args),
+                ],
+                'list_templates' => [
+                    'action' => $name,
+                    'success' => true,
+                    'data' => $this->templateService->getAll()->map(fn($t) => [
+                        'id' => $t->id,
+                        'templatename' => $t->templatename,
+                        'description' => $t->description,
+                    ])->toArray(),
+                ],
+                'get_template' => [
+                    'action' => $name,
+                    'success' => true,
+                    'data' => $this->templateService->get($args['id'] ?? 0),
+                ],
+                'list_tv' => [
+                    'action' => $name,
+                    'success' => true,
+                    'data' => $this->tvService->getAll()->map(fn($tv) => [
+                        'id' => $tv->id,
+                        'name' => $tv->name,
+                        'caption' => $tv->caption,
+                        'type' => $tv->type,
+                        'description' => $tv->description,
+                    ])->toArray(),
+                ],
+                'get_resource_tv' => [
+                    'action' => $name,
+                    'success' => true,
+                    'data' => $this->resourceService->getTvValues($args['id'] ?? 0),
+                ],
+                'bind_tv_to_templates' => [
+                    'action' => $name,
+                    'success' => $this->tvService->bindToTemplates(
+                        $args['tv_id'] ?? 0,
+                        $args['template_ids'] ?? []
+                    ),
+                ],
+                'analyze_seo' => [
+                    'action' => $name,
+                    'success' => true,
+                    'data' => $this->seoService->analyze($args['resource_id'] ?? 0),
+                ],
+                'get_resource_tree' => [
+                    'action' => $name,
+                    'success' => true,
+                    'data' => $this->resourceService->getTree(
+                        $args['parent'] ?? 0,
+                        $args['depth'] ?? 2
+                    ),
                 ],
                 default => [
                     'action' => $name,

@@ -363,6 +363,100 @@ class AiService
                     ],
                 ],
             ],
+            [
+                'name' => 'list_templates',
+                'description' => 'Get list of all templates in the CMS',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [],
+                ],
+            ],
+            [
+                'name' => 'get_template',
+                'description' => 'Get template details including code/content',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'id' => [
+                            'type' => 'integer',
+                            'description' => 'Template ID',
+                        ],
+                    ],
+                    'required' => ['id'],
+                ],
+            ],
+            [
+                'name' => 'list_tv',
+                'description' => 'Get list of all template variables in the CMS',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [],
+                ],
+            ],
+            [
+                'name' => 'get_resource_tv',
+                'description' => 'Get all TV values for a specific resource',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'id' => [
+                            'type' => 'integer',
+                            'description' => 'Resource ID',
+                        ],
+                    ],
+                    'required' => ['id'],
+                ],
+            ],
+            [
+                'name' => 'bind_tv_to_templates',
+                'description' => 'Bind a template variable to one or more templates',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'tv_id' => [
+                            'type' => 'integer',
+                            'description' => 'TV ID',
+                        ],
+                        'template_ids' => [
+                            'type' => 'array',
+                            'items' => ['type' => 'integer'],
+                            'description' => 'Array of template IDs to bind to',
+                        ],
+                    ],
+                    'required' => ['tv_id', 'template_ids'],
+                ],
+            ],
+            [
+                'name' => 'analyze_seo',
+                'description' => 'Analyze SEO of a resource and get current metrics',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'resource_id' => [
+                            'type' => 'integer',
+                            'description' => 'Resource ID',
+                        ],
+                    ],
+                    'required' => ['resource_id'],
+                ],
+            ],
+            [
+                'name' => 'get_resource_tree',
+                'description' => 'Get resource tree structure from a parent',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'parent' => [
+                            'type' => 'integer',
+                            'description' => 'Parent resource ID (0 for root)',
+                        ],
+                        'depth' => [
+                            'type' => 'integer',
+                            'description' => 'How deep to traverse (default 2)',
+                        ],
+                    ],
+                ],
+            ],
         ];
     }
 
@@ -383,6 +477,54 @@ class AiService
         }
 
         return $anthropicTools;
+    }
+
+    /**
+     * Continue conversation with tool results
+     */
+    public function continueWithToolResults(array $toolResults): array
+    {
+        $systemPrompt = $this->config['system_prompt'] ?? '';
+
+        // Build messages array
+        $messages = [
+            ['role' => 'system', 'content' => $systemPrompt],
+        ];
+
+        // Add conversation history
+        foreach ($this->conversationHistory as $historyItem) {
+            $messages[] = $historyItem;
+        }
+
+        // Add tool results as assistant message (the tool calls were already made)
+        $toolResultContent = "Tool execution results:\n";
+        foreach ($toolResults as $result) {
+            $toolResultContent .= "\n**{$result['name']}**:\n```json\n{$result['result']}\n```\n";
+        }
+        $messages[] = ['role' => 'user', 'content' => $toolResultContent];
+
+        try {
+            $response = match ($this->provider) {
+                'openai' => $this->callOpenAI($messages),
+                'anthropic' => $this->callAnthropic($messages),
+                default => throw new \Exception("Unsupported AI provider: {$this->provider}"),
+            };
+
+            // Save to history
+            $this->conversationHistory[] = ['role' => 'user', 'content' => $toolResultContent];
+            $this->conversationHistory[] = ['role' => 'assistant', 'content' => $response['content']];
+
+            return $response;
+        } catch (\Exception $e) {
+            Log::error('AI Service error: ' . $e->getMessage());
+
+            return [
+                'success' => false,
+                'content' => 'Error processing tool results: ' . $e->getMessage(),
+                'error' => $e->getMessage(),
+                'actions' => [],
+            ];
+        }
     }
 
     /**

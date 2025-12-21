@@ -19,7 +19,7 @@
         }
     },
     "extra": {
-        "evocms": {
+        "laravel": {
             "providers": [
                 "EvolutionCMS\\AiAssistant\\AiAssistantServiceProvider"
             ]

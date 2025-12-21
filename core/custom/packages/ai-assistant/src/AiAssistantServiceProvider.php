@@ -17,6 +17,13 @@ class AiAssistantServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register console commands
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                Console\InstallCommand::class,
+            ]);
+        }
+
         // Load routes
         $this->loadRoutesFrom(__DIR__ . '/Http/routes.php');
 
