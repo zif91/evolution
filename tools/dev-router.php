@@ -16,6 +16,11 @@ if (str_starts_with($path, '/manager')) {
     chdir($root . '/manager');
     require $root . '/manager/index.php';
 } else {
+    // Match Apache's friendly-URL rewrite while retaining explicit query parameters.
+    if ($path !== '/' && !isset($_GET['q'])) {
+        $_GET['q'] = ltrim($path, '/');
+        $_REQUEST['q'] = $_GET['q'];
+    }
     $_SERVER['SCRIPT_NAME'] = '/index.php';
     $_SERVER['PHP_SELF'] = '/index.php';
     require $root . '/index.php';

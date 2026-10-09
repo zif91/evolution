@@ -2705,7 +2705,8 @@ class Core extends AbstractLaravel implements Interfaces\CoreInterface
             $this->updatePubStatus();
 
             // find out which document we need to display
-            $this->documentMethod = filter_input(INPUT_GET, 'q') ? 'alias' : 'id';
+            // Routers may supply the friendly alias after PHP captures SAPI input.
+            $this->documentMethod = !empty($_GET['q']) && is_string($_GET['q']) ? 'alias' : 'id';
             $this->documentIdentifier = $this->getDocumentIdentifier($this->documentMethod);
         } else {
             header('HTTP/1.0 503 Service Unavailable');
