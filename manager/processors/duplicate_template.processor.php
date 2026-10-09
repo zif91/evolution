@@ -13,7 +13,7 @@ if ($id == 0) {
 
 // count duplicates
 $name = EvolutionCMS\Models\SiteTemplate::select('templatename')->findOrFail($id)->templatename;
-$count = EvolutionCMS\Models\SiteTemplate::where('templatename', 'LIKE', "{$name} {__('global.duplicated_el_suffix')}%'")->count();
+$count = EvolutionCMS\Models\SiteTemplate::where('templatename', 'LIKE', $name . ' ' . __('global.duplicated_el_suffix') . '%')->count();
 if ($count >= 1) {
     $count = ' ' . ($count + 1);
 } else {
@@ -24,7 +24,7 @@ if ($count >= 1) {
 $template = EvolutionCMS\Models\SiteTemplate::select("templatename", "description", "content", "category")
     ->findOrFail($id);
 $templateNew = $template->replicate();
-$templateNew->templatename .= " {__('global.duplicated_el_suffix')}{$count}";
+$templateNew->templatename .= ' ' . __('global.duplicated_el_suffix') . $count;
 $templateNew->save();
 $newid = $templateNew->id;
 

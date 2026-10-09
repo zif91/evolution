@@ -13,7 +13,7 @@ if ($id == 0) {
 
 // count duplicates
 $name = EvolutionCMS\Models\SitePlugin::select('name')->findOrFail($id)->name;
-$count = EvolutionCMS\Models\SitePlugin::where('name', 'LIKE', "{$name} {__('global.duplicated_el_suffix')}%'")->count();
+$count = EvolutionCMS\Models\SitePlugin::where('name', 'LIKE', $name . ' ' . __('global.duplicated_el_suffix') . '%')->count();
 if ($count >= 1) {
     $count = ' ' . ($count + 1);
 } else {
@@ -25,7 +25,7 @@ $plugin = EvolutionCMS\Models\SitePlugin::select("name", "description", "disable
     ->findOrFail($id);
 
 $pluginNew = $plugin->replicate();
-$pluginNew->name .= " {__('global.duplicated_el_suffix')}{$count}";
+$pluginNew->name .= ' ' . __('global.duplicated_el_suffix') . $count;
 $pluginNew->disabled = 1;
 $pluginNew->save();
 $newid = $pluginNew->id;

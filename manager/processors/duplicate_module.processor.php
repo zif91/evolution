@@ -12,7 +12,7 @@ if ($id == 0) {
 }
 // count duplicates
 $name = EvolutionCMS\Models\SiteModule::select('name')->findOrFail($id)->name;
-$count = EvolutionCMS\Models\SiteModule::where('name', 'LIKE', "{$name} {__('global.duplicated_el_suffix')}%'")->count();
+$count = EvolutionCMS\Models\SiteModule::where('name', 'LIKE', $name . ' ' . __('global.duplicated_el_suffix') . '%')->count();
 if ($count >= 1) {
     $count = ' ' . ($count + 1);
 } else {
@@ -37,7 +37,7 @@ $module = EvolutionCMS\Models\SiteModule::select(
 )->findOrFail($id);
 
 $moduleNew = $module->replicate();
-$moduleNew->name .= " {__('global.duplicated_el_suffix')}{$count}";
+$moduleNew->name .= ' ' . __('global.duplicated_el_suffix') . $count;
 $moduleNew->guid = createGUID();
 $moduleNew->disabled = 1;
 $moduleNew->save();
