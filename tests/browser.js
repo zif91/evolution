@@ -6,7 +6,8 @@ async (page) => {
   check('Public homepage HTTP 200', response.status() === 200);
   check('Legacy snippet', (await page.locator('#legacy-result').innerText()).includes('snippet parameters: passed'));
   check('Legacy plugin OnWebPagePrerender', (await page.locator('#plugin-result').innerText()).includes('OK'));
-  check('DocLister rendered database resource', (await page.getByRole('listitem').innerText()).includes('Laravel 13'));
+  const docLister = () => page.locator('section').filter({has:page.getByRole('heading',{name:'DocLister',exact:true})}).getByRole('listitem');
+  check('DocLister rendered database resource', (await docLister().allTextContents()).some(text => text.includes('Laravel 13')));
   await page.getByRole('button',{name:'Test form',exact:true}).click();
   await page.getByText('Enter your name',{exact:true}).waitFor();
   check('FormLister rejects invalid POST', await page.getByText('Enter your name',{exact:true}).isVisible());
@@ -24,7 +25,7 @@ async (page) => {
   check('Manager saved resource', await page.locator('input[name=pagetitle]').inputValue() === title);
   await page.screenshot({path:'reports/local-manager.png',fullPage:true});
   await page.goto('http://127.0.0.1:8133/');
-  check('Saved resource visible on frontend through DocLister', await page.getByRole('listitem').innerText() === title);
+  check('Saved resource visible on frontend through DocLister', (await docLister().allTextContents()).includes(title));
   await page.screenshot({path:'reports/local-home.png',fullPage:true});
   const isolated = await page.context().browser().newContext();
   try {

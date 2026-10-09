@@ -16,6 +16,10 @@ if (str_starts_with($path, '/manager')) {
     chdir($root . '/manager');
     require $root . '/manager/index.php';
 } else {
+    // Equivalent to ht.access: RewriteRule ^(.*)$ index.php?q=$1 [L,QSA].
+    if ($path !== '/' && $path !== '/index.php') {
+        $_GET['q'] = $_REQUEST['q'] = ltrim($path, '/');
+    }
     $_SERVER['SCRIPT_NAME'] = '/index.php';
     $_SERVER['PHP_SELF'] = '/index.php';
     require $root . '/index.php';

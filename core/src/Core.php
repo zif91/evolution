@@ -532,7 +532,7 @@ class Core extends AbstractLaravel implements Interfaces\CoreInterface
     {
         // function to test the query and find the retrieval method
         if ($method === 'alias') {
-            return $_REQUEST['q'];
+            return $_GET['q'] ?? '';
         }
 
         $id = filter_input(INPUT_GET, 'id');
@@ -2705,7 +2705,9 @@ class Core extends AbstractLaravel implements Interfaces\CoreInterface
             $this->updatePubStatus();
 
             // find out which document we need to display
-            $this->documentMethod = filter_input(INPUT_GET, 'q') ? 'alias' : 'id';
+            // Read the effective query: a PHP router may supply q after SAPI input was captured.
+            $alias = filter_var($_GET['q'] ?? '', FILTER_UNSAFE_RAW, FILTER_REQUIRE_SCALAR);
+            $this->documentMethod = ($alias !== false && $alias !== '') ? 'alias' : 'id';
             $this->documentIdentifier = $this->getDocumentIdentifier($this->documentMethod);
         } else {
             header('HTTP/1.0 503 Service Unavailable');
