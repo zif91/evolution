@@ -60,7 +60,7 @@
     "predis/predis": "*",
     "james-heinrich/phpthumb": "*",
     "evocms-services/user-manager": "1.*",
-    "evocms-services/document-manager": "1.*",
+    "evocms-services/document-manager": "dev-integration/illuminate-13#c7d323675911e889dfa7ba4cb4d1b6a08132e937",
     "evolution-cms/salo": "1.*",
     "pathologic/modxapi": "1.*",
     "league/flysystem-local": "^3.0"
@@ -143,6 +143,10 @@
       "options": {
         "symlink": false
       }
+    },
+    {
+      "type": "git",
+      "url": "https://github.com/zif91/DocumentManager"
     }
   ]
 }

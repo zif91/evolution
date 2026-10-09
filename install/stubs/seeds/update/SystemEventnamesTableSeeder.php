@@ -78,23 +78,13 @@ class SystemEventnamesTableSeeder extends Seeder
         \DB::table('system_eventnames')->whereIn('name', $delete2)->delete();
         */
 
-        $rename2 = [
-            'OnBeforeDocFormSave' => 'OnBeforeDocSave',
-            'OnDocFormSave' => 'OnDocSave',
-            'OnBeforeDocFormDelete' => 'OnBeforeDocDelete',
-            'OnDocFormDelete' => 'OnDocDelete',
-            'OnDocFormUnDelete' => 'OnDocUndelete',
-            'OnDocPublished' => 'OnDocPublish',
-            'OnDocUnPublished' => 'OnDocUnpublish',
-        ];
-        foreach ($rename2 as $old => $new) {
-            \DB::table('system_eventnames')
-                ->where('name', $old)
-                ->update([
-                    'name' => $new,
-                    'groupname' => 'Documents',
-                    'service' => 1
+        // Keep old IDs and plugin bindings intact. New names coexist with legacy names.
+        foreach (\EvolutionCMS\Support\DocumentEventCompatibility::ALIASES as $new => $old) {
+            foreach ([$new, $old] as $name) {
+                \DB::table('system_eventnames')->insertOrIgnore([
+                    'name' => $name, 'groupname' => 'Documents', 'service' => 1,
                 ]);
+            }
         }
     }
 }

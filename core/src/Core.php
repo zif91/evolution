@@ -5544,6 +5544,21 @@ class Core extends AbstractLaravel implements Interfaces\CoreInterface
      */
     public function invokeEvent($evtName, $extParams = [])
     {
+        $result = $this->invokeEventListeners($evtName, $extParams);
+        $legacyName = \EvolutionCMS\Support\DocumentEventCompatibility::ALIASES[$evtName] ?? null;
+        if ($legacyName !== null) {
+            $legacyParams = \EvolutionCMS\Support\DocumentEventCompatibility::parameters($evtName, $extParams);
+            $legacyResult = $this->invokeEventListeners($legacyName, $legacyParams);
+            if (is_array($legacyResult)) {
+                $result = array_merge(is_array($result) ? $result : [], $legacyResult);
+            }
+        }
+        return $result;
+    }
+
+    /** Dispatch one exact event name; aliases must not recursively dispatch. */
+    protected function invokeEventListeners($evtName, $extParams = [])
+    {
         if($this->isSafemode()) return;
 
         $results = null;

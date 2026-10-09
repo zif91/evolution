@@ -923,11 +923,11 @@ require_once(MODX_MANAGER_PATH . 'includes/active_user_locks.inc.php');
                                 $tvs = $tvs->orderBy('site_tmplvars.id', 'ASC');
                                 $tvs = $tvs->where('site_tmplvar_templates.templateid', $template);
 
-                                if ($_SESSION['mgrRole'] != 1 && !empty($_SESSION['mgrDocgroups'])) {
+                                if ($_SESSION['mgrRole'] != 1) {
                                     $tvs->leftJoin('site_tmplvar_access', 'site_tmplvar_access.tmplvarid', '=', 'site_tmplvars.id');
                                     $tvs = $tvs->where(function ($query) {
                                         $query->whereNull('site_tmplvar_access.documentgroup')
-                                            ->orWhereIn('site_tmplvar_access.documentgroup', $_SESSION['mgrDocgroups']);
+                                            ->orWhereIn('site_tmplvar_access.documentgroup', $_SESSION['mgrDocgroups'] ?? []);
                                     });
                                 }
 

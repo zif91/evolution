@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9666979ab6f9c14dad78cb1e43b3a74f",
+    "content-hash": "ac3749fac84b0ae9e9644ab96c65289a",
     "packages": [
         {
             "name": "brick/math",
@@ -1368,17 +1368,11 @@
         },
         {
             "name": "evocms-services/document-manager",
-            "version": "1.0.17",
+            "version": "dev-integration/illuminate-13",
             "source": {
                 "type": "git",
-                "url": "https://github.com/evocms-community/DocumentManager.git",
-                "reference": "49db639591db035a559d45ce08c0220f4856727b"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/evocms-community/DocumentManager/zipball/49db639591db035a559d45ce08c0220f4856727b",
-                "reference": "49db639591db035a559d45ce08c0220f4856727b",
-                "shasum": ""
+                "url": "https://github.com/zif91/DocumentManager",
+                "reference": "c7d323675911e889dfa7ba4cb4d1b6a08132e937"
             },
             "type": "library",
             "autoload": {
@@ -1386,7 +1380,6 @@
                     "EvolutionCMS\\DocumentManager\\": "src"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -1396,10 +1389,7 @@
                     "email": "sertious2008.wortk3@gmail.com"
                 }
             ],
-            "support": {
-                "source": "https://github.com/evocms-community/DocumentManager/tree/1.0.17"
-            },
-            "time": "2024-07-18T08:36:02+00:00"
+            "time": "2026-10-09T13:43:21+00:00"
         },
         {
             "name": "evocms-services/user-manager",
@@ -9701,6 +9691,7 @@
     "aliases": [],
     "minimum-stability": "dev",
     "stability-flags": {
+        "evocms-services/document-manager": 20,
         "roave/security-advisories": 20
     },
     "prefer-stable": true,

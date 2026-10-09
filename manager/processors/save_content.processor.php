@@ -66,8 +66,16 @@ $tvIds = \EvolutionCMS\Models\SiteTmplvarTemplate::query()
 
 // get tv
 $tvs = \EvolutionCMS\Models\SiteTmplvar::query()
-    ->whereIn('id', $tvIds)
-    ->get();
+    ->select('site_tmplvars.*')
+    ->whereIn('site_tmplvars.id', $tvIds);
+if ($_SESSION['mgrRole'] != 1) {
+    $tvs->leftJoin('site_tmplvar_access', 'site_tmplvar_access.tmplvarid', '=', 'site_tmplvars.id')
+        ->where(function ($query) {
+            $query->whereNull('site_tmplvar_access.documentgroup')
+                ->orWhereIn('site_tmplvar_access.documentgroup', $_SESSION['mgrDocgroups'] ?? []);
+        });
+}
+$tvs = $tvs->distinct()->get();
 
 foreach ($tvs->toArray() as $tv) {
     $tmplvar = '';
@@ -171,6 +179,16 @@ if ($actionToTake != 'create') {
         return;
     }
 
+    // A forged POST must pass the same document ACL as the editor page.
+    $udperms = new EvolutionCMS\Legacy\Permissions();
+    $udperms->user = evo()->getLoginUserID('mgr');
+    $udperms->document = $resourceArray['id'];
+    $udperms->role = $_SESSION['mgrRole'];
+    if (!$udperms->checkPermissions()) {
+        evo()->webAlertAndQuit(__('global.access_permission_denied'));
+        return;
+    }
+
     $existingDocument = $existingDocument->toArray();
 }
 
@@ -178,7 +196,7 @@ if ($actionToTake != 'create') {
 if (evo()->getConfig('use_udperms')) {
     $parent = (int) get_by_key($_POST, 'parent', 0, 'is_scalar');
 
-    if ($existingDocument && $existingDocument['parent'] != $parent) {
+    if (!$existingDocument || $existingDocument['parent'] != $parent) {
         $udperms = new EvolutionCMS\Legacy\Permissions();
         $udperms->user = evo()->getLoginUserID('mgr');
         $udperms->document = $parent;
@@ -455,7 +473,7 @@ switch ($actionToTake) {
 
         // make redirect
         if ($_POST['refresh_preview'] == '1') {
-            $header = "Location: {MODX_SITE_URL}index.php?id={$resourceArray['id']}&z=manprev";
+            $header = "Location: " . MODX_SITE_URL . "index.php?id={$resourceArray['id']}&z=manprev";
         } else {
             if ($_POST['stay'] != '2' && $resourceArray['id'] > 0) {
                 evo()->unlockElement(7, $resourceArray['id']);

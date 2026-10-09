@@ -168,5 +168,11 @@ class SystemEventnamesTableSeeder extends Seeder
             ['name' => 'OnWebPagePrerender', 'service' => '5', 'groupname' => '',],
             ['name' => 'OnBeforeMailSend', 'service' => '1', 'groupname' => '',],
         ]);
+        // Legacy plugins still select and receive the original event names.
+        foreach (\EvolutionCMS\Support\DocumentEventCompatibility::ALIASES as $name) {
+            \DB::table('system_eventnames')->insertOrIgnore([
+                'name' => $name, 'groupname' => 'Documents', 'service' => 1,
+            ]);
+        }
     }
 }

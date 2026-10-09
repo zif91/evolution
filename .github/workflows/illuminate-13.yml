@@ -56,3 +56,6 @@ jobs:
           path: |
             reports/test-run.json
             reports/compatibility.json
+            reports/document-manager.json
+            reports/manager-http.json
+            reports/*.log
