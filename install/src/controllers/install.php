@@ -186,7 +186,7 @@ try {
         define('IN_INSTALL_MODE', true);
         define('MODX_BASE_PATH', dirname(dirname(dirname(__DIR__))) . '/');
 
-        define('MODX_SITE_URL', $_SERVER['HTTP_HOST'] . '/');
+        define('MODX_SITE_URL', installerSiteUrl($_SERVER));
         if (file_exists(MODX_BASE_PATH . 'core/storage/bootstrap/services.php')) {
             unlink(MODX_BASE_PATH . 'core/storage/bootstrap/services.php');
         }

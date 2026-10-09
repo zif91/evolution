@@ -780,3 +780,13 @@ if (!function_exists('seed')) {
         }
     }
 }
+
+/** Build the absolute URI used while bootstrapping the browser installer. */
+function installerSiteUrl(array $server): string
+{
+    $scheme = (!empty($server['HTTPS']) && strcasecmp($server['HTTPS'], 'off') !== 0)
+        || ($server['REQUEST_SCHEME'] ?? '') === 'https' ? 'https' : 'http';
+    $baseUrlPath = rtrim(dirname(dirname($server['SCRIPT_NAME'])), '/.') . '/';
+
+    return $scheme . '://' . $server['HTTP_HOST'] . $baseUrlPath;
+}
