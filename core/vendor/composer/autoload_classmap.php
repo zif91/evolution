@@ -1259,6 +1259,7 @@ return array(
     'EvolutionCMS\\Support\\DataGrid' => $baseDir . '/src/Support/DataGrid.php',
     'EvolutionCMS\\Support\\DataSetPager' => $baseDir . '/src/Support/DataSetPager.php',
     'EvolutionCMS\\Support\\DocBlock' => $baseDir . '/src/Support/DocBlock.php',
+    'EvolutionCMS\\Support\\DocumentEventCompatibility' => $baseDir . '/src/Support/DocumentEventCompatibility.php',
     'EvolutionCMS\\Support\\Formatter\\CSSMinify' => $baseDir . '/src/Support/Formatter/CSSMinify.php',
     'EvolutionCMS\\Support\\Formatter\\HtmlFormatter' => $baseDir . '/src/Support/Formatter/HtmlFormatter.php',
     'EvolutionCMS\\Support\\Formatter\\SqlFormatter' => $baseDir . '/src/Support/Formatter/SqlFormatter.php',

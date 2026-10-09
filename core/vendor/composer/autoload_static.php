@@ -1939,6 +1939,7 @@ class ComposerStaticInit6064fde4f52f543f5d9514d30e5f77d6
         'EvolutionCMS\\Support\\DataGrid' => __DIR__ . '/../..' . '/src/Support/DataGrid.php',
         'EvolutionCMS\\Support\\DataSetPager' => __DIR__ . '/../..' . '/src/Support/DataSetPager.php',
         'EvolutionCMS\\Support\\DocBlock' => __DIR__ . '/../..' . '/src/Support/DocBlock.php',
+        'EvolutionCMS\\Support\\DocumentEventCompatibility' => __DIR__ . '/../..' . '/src/Support/DocumentEventCompatibility.php',
         'EvolutionCMS\\Support\\Formatter\\CSSMinify' => __DIR__ . '/../..' . '/src/Support/Formatter/CSSMinify.php',
         'EvolutionCMS\\Support\\Formatter\\HtmlFormatter' => __DIR__ . '/../..' . '/src/Support/Formatter/HtmlFormatter.php',
         'EvolutionCMS\\Support\\Formatter\\SqlFormatter' => __DIR__ . '/../..' . '/src/Support/Formatter/SqlFormatter.php',

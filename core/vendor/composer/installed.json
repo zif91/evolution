@@ -1416,28 +1416,21 @@
         },
         {
             "name": "evocms-services/document-manager",
-            "version": "1.0.17",
-            "version_normalized": "1.0.17.0",
+            "version": "dev-integration/illuminate-13",
+            "version_normalized": "dev-integration/illuminate-13",
             "source": {
                 "type": "git",
-                "url": "https://github.com/evocms-community/DocumentManager.git",
-                "reference": "49db639591db035a559d45ce08c0220f4856727b"
+                "url": "https://github.com/zif91/DocumentManager",
+                "reference": "c7d323675911e889dfa7ba4cb4d1b6a08132e937"
             },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/evocms-community/DocumentManager/zipball/49db639591db035a559d45ce08c0220f4856727b",
-                "reference": "49db639591db035a559d45ce08c0220f4856727b",
-                "shasum": ""
-            },
-            "time": "2024-07-18T08:36:02+00:00",
+            "time": "2026-10-09T13:43:21+00:00",
             "type": "library",
-            "installation-source": "dist",
+            "installation-source": "source",
             "autoload": {
                 "psr-4": {
                     "EvolutionCMS\\DocumentManager\\": "src"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -1447,9 +1440,6 @@
                     "email": "sertious2008.wortk3@gmail.com"
                 }
             ],
-            "support": {
-                "source": "https://github.com/evocms-community/DocumentManager/tree/1.0.17"
-            },
             "install-path": "../evocms-services/document-manager"
         },
         {
