@@ -31,5 +31,23 @@
     "Combined CBR transport fixture responds503 locally; source retains production URL.",
     "Legacy ClientSettings v2.2.0 backport is separate from the already-fixed HEAD used in combined.",
     "Rate change between foreign-currency checkout and callback remains an unverified coverage gap."
-  ]
+  ],
+  "windowsInstallerHotfix": {
+    "commit": "919432af66237bfd1016d43a4bbb89321ced100d",
+    "issue": 31,
+    "nativeCI": "https://github.com/zif91/evolution/actions/runs/37987924701",
+    "nativePlatforms": [
+      "Windows PHP8.3",
+      "Windows PHP8.4",
+      "Ubuntu PHP8.3",
+      "Ubuntu PHP8.4"
+    ],
+    "URLCasesPerPlatform": 8,
+    "oldWindowsMalformedHostReproduced": true,
+    "freshBrowserInstall": [
+      "Linux PHP8.3 + MySQL8.0",
+      "Linux PHP8.4 + MySQL8.0"
+    ],
+    "OSPanelFullInstall": "awaiting tester confirmation"
+  }
 }
