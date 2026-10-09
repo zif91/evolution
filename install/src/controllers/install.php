@@ -203,7 +203,11 @@ try {
             }
         }
 
-        Console::call('migrate', ['--path' => '../install/stubs/migrations', '--force' => true]);
+        require_once __DIR__ . '/../migrations/prepare.php';
+        prepareInstallerMigrations();
+        if (Console::call('migrate', ['--path' => '../install/stubs/migrations', '--force' => true]) !== 0) {
+            throw new RuntimeException('Installer migrations failed.');
+        }
 
         if ($installMode == 0) {
             seed('install');

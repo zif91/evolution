@@ -1,0 +1,579 @@
+{
+  "source": "Evolution CE 3.1.x c53d99214c35c1c8b8d850900c7a1eaa8d1dda12; completed CLI schema (65 installer migrations)",
+  "migrations": {
+    "2018_06_29_182342_create_active_user_locks_table": "7f921d2c1cfaaee07582c5d341a3574f8f7bd81fe9e7da97f8fe89121fe1c789",
+    "2018_06_29_182342_create_active_user_sessions_table": "f3eb508c645aa6f673521243fc312a4eb08b7b572150057e96127b77c448068f",
+    "2018_06_29_182342_create_active_users_table": "6df47075d2d4fa58dc02bcd4ce450746bb8d3e39d271c7733326d90ad6ec94a9",
+    "2018_06_29_182342_create_categories_table": "fb936601a46cf5a746d37ad51539605bfe779a94d7c6c8268ef6c63299ba5ffe",
+    "2018_06_29_182342_create_document_groups_table": "3e6cc852b89fd0202a9b5ee4f3af5cd59feba7327a685c2c7d53c76098128a7e",
+    "2018_06_29_182342_create_documentgroup_names_table": "1bd12ad7b41a4641b1d643c63c7878a44a42fed718d12fb4393a5dbefdf26619",
+    "2018_06_29_182342_create_event_log_table": "7a70e18408c0906de3c29c659420d441842cb14dc486f43a388425dc73ca306c",
+    "2018_06_29_182342_create_manager_log_table": "c1bf73d039a91ca2a6cdc9f25446877b1c6135c467f0ecdf1528d49f1b0d50c3",
+    "2018_06_29_182342_create_manager_users_table": "00c2b3e0e5eeff58260bd45d90ed5cf2d748d44e315980eebda4eb1e51011f83",
+    "2018_06_29_182342_create_member_groups_table": "c167930d1e52e2a709b3b90254e5d8f45d7e470267f39532e4695946605704fb",
+    "2018_06_29_182342_create_membergroup_access_table": "166020f49c8325d9474eea807a1963e7cbfc22cca59ef56c28fd29ccc12003eb",
+    "2018_06_29_182342_create_membergroup_names_table": "91211c256484cc0f491bb9b6ea6c9beaed907525b7ae509fec546ce9f71476e9",
+    "2018_06_29_182342_create_permissions_groups_table": "8fc637c117587922a69d8477f3270624fcbb365620a7f47be1fb5a835438b342",
+    "2018_06_29_182342_create_permissions_table": "e2a2fdc2bc699c0b7b001b308c5614b563f4814ed55d157b07b9ece4635681f1",
+    "2018_06_29_182342_create_role_permissions_table": "b8689870d524b3519742b38051f7c81231de332cc35e150083eb7b40e3608339",
+    "2018_06_29_182342_create_site_content_table": "e9b6a6b62d1bb3949b461ffb556210c2b84c4b84b8e04e32ff2c506b2a604bc8",
+    "2018_06_29_182342_create_site_htmlsnippets_table": "c1d53349712e7aa7762ab9e6cb5797a57e60c16128b7875749f8b9277361bf3c",
+    "2018_06_29_182342_create_site_module_access_table": "51f8502f3fa5746194f228057a6bac60aa92a0678c4ba48d8f977891076492a1",
+    "2018_06_29_182342_create_site_module_depobj_table": "e3122a49fb1c6349eb89eab97eb8341beb4e59d285ea579f806db46060827c46",
+    "2018_06_29_182342_create_site_modules_table": "94890291a49ebcdd4235340193e388378d3b4568104b8e9c70d108cf730a17be",
+    "2018_06_29_182342_create_site_plugin_events_table": "0aaa5e9707d357704884a95ee574397c3451671679fc3ade36887662be67ae7d",
+    "2018_06_29_182342_create_site_plugins_table": "dcaea0321ca4f1ad2e6e3f84fb1c5e1a064db096c518e3ad5533baf43b600797",
+    "2018_06_29_182342_create_site_snippets_table": "0cf906a577e37fa2187adb378f75cf5022035586c99d6579a5623d80852ab7f9",
+    "2018_06_29_182342_create_site_templates_table": "07ae3a3cbd518153febbba77bc1b8fe4fab7236082d89ad8a9927bb085fec727",
+    "2018_06_29_182342_create_site_tmplvar_access_table": "a08d5ac382dce733b396232665bdcb64202e4a09f0eff7a4f4a5ecd59a46e4a4",
+    "2018_06_29_182342_create_site_tmplvar_contentvalues_table": "1d450932e4d243a803dbf2cd3221ca21345f56b140b3b0de1a374bf3a54d3fa4",
+    "2018_06_29_182342_create_site_tmplvar_templates_table": "309fa70329dce780b083654c2b1f5ee7d0ef178eaab9b568a2777e1e9ce67983",
+    "2018_06_29_182342_create_site_tmplvars_table": "a9a70e5c590199c58c040fa819cf6b4bd76c9bbaf5c338c95a8b265150d8a74b",
+    "2018_06_29_182342_create_system_eventnames_table": "341034d05e9b3511ffba1598630359c3b5b96823c4f909dce3d24073da842463",
+    "2018_06_29_182342_create_system_settings_table": "d44b8c71e8f2704935773c40085c60507710458057ba536a1f1367408bf3e9e1",
+    "2018_06_29_182342_create_user_attributes_table": "3c1261502bda13905797f364e00cedfad0c7d91a4fe4f4ad63f9582f31736391",
+    "2018_06_29_182342_create_user_roles_table": "0c9cc9b182172fc0d1e85200a6e00678218fa69410190bc593f5f8e66c124193",
+    "2018_06_29_182342_create_user_settings_table": "a4a2887a779ad27e40268212f2166e7f86b4804ca0344d52090735ec25b38b48",
+    "2018_06_29_182342_create_web_groups_table": "4d483ce0b44fa22fb2282cd03443284d094c1382893e1835dac0c562a9dbf308",
+    "2018_06_29_182342_create_web_user_attributes_table": "23ad376d9f5a5718399cf3b3e09ea3f635a6ee90ef050f865c15055aba7b4a9c",
+    "2018_06_29_182342_create_web_user_settings_table": "d243428052413313f3c4e41af6e07e4123fa03bbdb826d6a5ec124818b1ef319",
+    "2018_06_29_182342_create_web_users_table": "fbb6a9dcec7ff83fc2b33201d4aac1be6408aba4022e299b29d51c56ccfc45c2",
+    "2018_06_29_182342_create_webgroup_access_table": "1bf311be4be2e349626f98f23f3fdde1b0e80109fac442e2488a9284fb644918",
+    "2018_06_29_182342_create_webgroup_names_table": "f808580ef55c950c51086e467ea1fa9d4e20b70cf9ae4a2bd925aa3cfa9cd863",
+    "2020_09_12_110820_create_site_content_closure": "5a5d143b9a76db38a964d723a137232620b56aea5eecf774c12332e081d0aa2f",
+    "2020_09_16_110820_update_web_user_attributes_table": "93ce021973ca8972241a1eb2dbc1ac2299c673d92f9c2d3bc4c23af7ef5ad076",
+    "2020_10_05_124820_second_update_web_user_attributes_table": "f4fe1f912ee1d62aa32abd09c1db8c64c0840360d28235dc23a205f5d6670fbb",
+    "2020_10_05_154230_drop_manager_user_tables": "7e4d4a5d4694080d0769b3a1b6711c9c7384b62125dd438cbf1c019b58e19894",
+    "2020_10_05_162325_rename_web_user_tables": "38f2616d1415370cc5891680a3dd843ec0b775d2543874c0a62ae71510fdf2b2",
+    "2020_10_08_112342_remove_column_from_role_table": "5f6cf998b89afb17523a6268e5d76278c5cf4c55cd57f5b7e6a6b2bb2fd6d026",
+    "2020_10_12_065655_make_guid_nullable_in_modules": "174ad71d74ec9be8a2a6cc84b810fb1991a9913dc055052ace3bc1606310c272",
+    "2020_10_12_065655_make_moduleguid_nullable_in_plugins": "b3281f44c26d53d19bc6bd7b4e7b6eba981cbdd17187d37729902444d6c05fcd",
+    "2020_10_28_154230_drop_webuser_group_tables": "1a87d945a37e1f1b0d7579735906ae6a83fc634f41b7cceec8e09119bcc4db4e",
+    "2020_10_30_065655_make_dob_nullable_in_userattributes": "49ee235e63535b77cfd73cad8ab768943f52bc2b3a57ab94fca3fa8072cb9f40",
+    "2020_11_02_100555_add_token_columns_to_user_table": "a3e11402fa8f5158bb0886052466aa0c23b70ae090183a4908b2b9d07aae1bf2",
+    "2020_11_10_110555_add_verified_columns_to_user_table": "3302f1e423e24a394f752ddf07ad54ee9bb66c7a97f2cd9c8feddce0b606b94f",
+    "2020_11_22_114803_create_user_role_vars": "62e0668c8592dc8fb05612e51f27e8a8eb4bb7d50d9021e79ba962a02e662df4",
+    "2020_11_22_114809_create_user_values": "7184fd468e4ccb73d17151879be39237e5bb23d19c8dbd8eb2aa4249b48a0aa7",
+    "2020_12_23_065655_make_display_nullable_in_tmplvars": "de8b53315b3c8099f9ad0cc7b6b7d6f480c3e40b9285a71021dd633ab735c7f6",
+    "2021_02_05_121655_add_index_to_pubdate_column_content_table": "7f4b3467e9a5bf5c8d89506d3cac9f26a62513528bebb3019640c1a2fed63c54",
+    "2021_02_10_060454_add_properties_column_to_site_tmplvars": "8ee58524d220f05b28222fbc98db4a021a42d3ca707fd51b1de77a7774a4d218",
+    "2021_02_17_102610_rename_donthit_column_in_site_content_table": "8a8e456753fbd3acb3cdc1acf9720023cd15557c84ac8322381f80e487fa6464",
+    "2022_04_17_133922_add_context_column_to_membergroup_access": "c3afe02ba5c62a854336a228ac26d0e84e93d100794793008b6718496b23155e",
+    "2022_09_07_130522_resize_ip_column_in_manager_log": "6c42e1f71762bcfb8c42c377357d10666ec6478b923b6b039f682191188366dc",
+    "2022_12_03_183200_add_unique_index_to_name_col_in_system_eventnames_table": "602cd560493456816923c41b7a9aba67a7a460e9b015ee7b82d16083644ba4fe",
+    "2023_01_06_191600_add_indexes_to_fields_in_manager_log_table": "e727cff34567cef1a5aacf33626e1c076333edb8a27307793cff815c42961ef3",
+    "2023_10_06_145300_modify_fullname_column_in_userattributes_table": "884921c9fde796939b8213c21c5d76933b350e0ee32647d2a2b0bd5e6611438f",
+    "2024_03_13_001412_add_templatecontroller_column_to_site_templates": "6db2635dd6dd2d0c19d5d4492e4ce54fad533b42f3f92d0a63fe6919cef4d3ea",
+    "2024_10_13_011111_change_active_users_primary_index": "eee94e6992dfaa91c2c574ca035c0e036960e1266b54469f646d894116039bcc",
+    "2026_01_06_215911_change_tmplvars_content_indexes": "02d274965a736aeb45eced85e0c6d4146ba04cbc5e7680b019414c6ace800851"
+  },
+  "schema": {
+    "active_user_locks": {
+      "columns": [
+        "id",
+        "sid",
+        "internalKey",
+        "elementType",
+        "elementId",
+        "lasthit"
+      ],
+      "indexes": [
+        "ix_element_id"
+      ]
+    },
+    "active_user_sessions": {
+      "columns": [
+        "sid",
+        "internalKey",
+        "lasthit",
+        "ip"
+      ],
+      "indexes": []
+    },
+    "active_users": {
+      "columns": [
+        "sid",
+        "internalKey",
+        "username",
+        "lasthit",
+        "action",
+        "id"
+      ],
+      "indexes": []
+    },
+    "categories": {
+      "columns": [
+        "id",
+        "category",
+        "rank"
+      ],
+      "indexes": []
+    },
+    "document_groups": {
+      "columns": [
+        "id",
+        "document_group",
+        "document"
+      ],
+      "indexes": [
+        "ix_dg_id",
+        "document_group",
+        "document"
+      ]
+    },
+    "documentgroup_names": {
+      "columns": [
+        "id",
+        "name",
+        "private_memgroup",
+        "private_webgroup"
+      ],
+      "indexes": [
+        "name"
+      ]
+    },
+    "event_log": {
+      "columns": [
+        "id",
+        "eventid",
+        "createdon",
+        "type",
+        "user",
+        "usertype",
+        "source",
+        "description"
+      ],
+      "indexes": [
+        "event_log_user_index"
+      ]
+    },
+    "manager_log": {
+      "columns": [
+        "id",
+        "timestamp",
+        "internalKey",
+        "username",
+        "action",
+        "itemid",
+        "itemname",
+        "message",
+        "ip",
+        "useragent"
+      ],
+      "indexes": [
+        "manager_log_internalkey_index",
+        "manager_log_action_index",
+        "manager_log_itemid_index",
+        "manager_log_itemname_index",
+        "manager_log_message_index",
+        "manager_log_timestamp_index"
+      ]
+    },
+    "member_groups": {
+      "columns": [
+        "id",
+        "user_group",
+        "member"
+      ],
+      "indexes": [
+        "ix_group_member"
+      ]
+    },
+    "membergroup_access": {
+      "columns": [
+        "id",
+        "membergroup",
+        "documentgroup",
+        "context"
+      ],
+      "indexes": []
+    },
+    "membergroup_names": {
+      "columns": [
+        "id",
+        "name"
+      ],
+      "indexes": [
+        "membergroup_names_name_unique"
+      ]
+    },
+    "permissions": {
+      "columns": [
+        "id",
+        "name",
+        "key",
+        "lang_key",
+        "group_id",
+        "disabled",
+        "created_at",
+        "updated_at"
+      ],
+      "indexes": []
+    },
+    "permissions_groups": {
+      "columns": [
+        "id",
+        "name",
+        "lang_key",
+        "created_at",
+        "updated_at"
+      ],
+      "indexes": []
+    },
+    "role_permissions": {
+      "columns": [
+        "id",
+        "permission",
+        "role_id",
+        "created_at",
+        "updated_at"
+      ],
+      "indexes": []
+    },
+    "site_content": {
+      "columns": [
+        "id",
+        "type",
+        "contentType",
+        "pagetitle",
+        "longtitle",
+        "description",
+        "alias",
+        "link_attributes",
+        "published",
+        "pub_date",
+        "unpub_date",
+        "parent",
+        "isfolder",
+        "introtext",
+        "content",
+        "richtext",
+        "template",
+        "menuindex",
+        "searchable",
+        "cacheable",
+        "createdby",
+        "createdon",
+        "editedby",
+        "editedon",
+        "deleted",
+        "deletedon",
+        "deletedby",
+        "publishedon",
+        "publishedby",
+        "menutitle",
+        "hide_from_tree",
+        "privateweb",
+        "privatemgr",
+        "content_dispo",
+        "hidemenu",
+        "alias_visible"
+      ],
+      "indexes": [
+        "typeidx",
+        "aliasidx",
+        "parent",
+        "pub_unpub_published",
+        "pub_unpub",
+        "unpub",
+        "pub",
+        "content_ft_idx"
+      ]
+    },
+    "site_content_closure": {
+      "columns": [
+        "closure_id",
+        "ancestor",
+        "descendant",
+        "depth"
+      ],
+      "indexes": []
+    },
+    "site_htmlsnippets": {
+      "columns": [
+        "id",
+        "name",
+        "description",
+        "editor_type",
+        "editor_name",
+        "category",
+        "cache_type",
+        "snippet",
+        "locked",
+        "createdon",
+        "editedon",
+        "disabled"
+      ],
+      "indexes": []
+    },
+    "site_module_access": {
+      "columns": [
+        "id",
+        "module",
+        "usergroup"
+      ],
+      "indexes": []
+    },
+    "site_module_depobj": {
+      "columns": [
+        "id",
+        "module",
+        "resource",
+        "type"
+      ],
+      "indexes": []
+    },
+    "site_modules": {
+      "columns": [
+        "id",
+        "name",
+        "description",
+        "editor_type",
+        "disabled",
+        "category",
+        "wrap",
+        "locked",
+        "icon",
+        "enable_resource",
+        "resourcefile",
+        "createdon",
+        "editedon",
+        "guid",
+        "enable_sharedparams",
+        "properties",
+        "modulecode"
+      ],
+      "indexes": []
+    },
+    "site_plugin_events": {
+      "columns": [
+        "pluginid",
+        "evtid",
+        "priority"
+      ],
+      "indexes": []
+    },
+    "site_plugins": {
+      "columns": [
+        "id",
+        "name",
+        "description",
+        "editor_type",
+        "category",
+        "cache_type",
+        "plugincode",
+        "locked",
+        "properties",
+        "disabled",
+        "moduleguid",
+        "createdon",
+        "editedon"
+      ],
+      "indexes": []
+    },
+    "site_snippets": {
+      "columns": [
+        "id",
+        "name",
+        "description",
+        "editor_type",
+        "category",
+        "cache_type",
+        "snippet",
+        "locked",
+        "properties",
+        "moduleguid",
+        "createdon",
+        "editedon",
+        "disabled"
+      ],
+      "indexes": []
+    },
+    "site_templates": {
+      "columns": [
+        "id",
+        "templatename",
+        "templatealias",
+        "templatecontroller",
+        "description",
+        "editor_type",
+        "category",
+        "icon",
+        "template_type",
+        "content",
+        "locked",
+        "selectable",
+        "createdon",
+        "editedon"
+      ],
+      "indexes": []
+    },
+    "site_tmplvar_access": {
+      "columns": [
+        "id",
+        "tmplvarid",
+        "documentgroup"
+      ],
+      "indexes": []
+    },
+    "site_tmplvar_contentvalues": {
+      "columns": [
+        "id",
+        "tmplvarid",
+        "contentid",
+        "value"
+      ],
+      "indexes": [
+        "uq_tmplvarid_contentid",
+        "idx_tmplvarid_value_prefix",
+        "idx_value_prefix",
+        "idx_tmplvarid_contentid_value_prefix",
+        "idx_tmplvarid",
+        "idx_contentid",
+        "ft_value"
+      ]
+    },
+    "site_tmplvar_templates": {
+      "columns": [
+        "tmplvarid",
+        "templateid",
+        "rank"
+      ],
+      "indexes": []
+    },
+    "site_tmplvars": {
+      "columns": [
+        "id",
+        "type",
+        "name",
+        "caption",
+        "description",
+        "editor_type",
+        "category",
+        "locked",
+        "elements",
+        "rank",
+        "display",
+        "display_params",
+        "default_text",
+        "createdon",
+        "editedon",
+        "properties"
+      ],
+      "indexes": [
+        "indx_rank"
+      ]
+    },
+    "system_eventnames": {
+      "columns": [
+        "id",
+        "name",
+        "service",
+        "groupname"
+      ],
+      "indexes": [
+        "system_eventnames_name_unique"
+      ]
+    },
+    "system_settings": {
+      "columns": [
+        "setting_name",
+        "setting_value"
+      ],
+      "indexes": []
+    },
+    "user_attributes": {
+      "columns": [
+        "id",
+        "internalKey",
+        "fullname",
+        "first_name",
+        "last_name",
+        "middle_name",
+        "role",
+        "email",
+        "phone",
+        "mobilephone",
+        "blocked",
+        "blockeduntil",
+        "blockedafter",
+        "logincount",
+        "lastlogin",
+        "thislogin",
+        "failedlogincount",
+        "sessionid",
+        "dob",
+        "gender",
+        "country",
+        "street",
+        "city",
+        "state",
+        "zip",
+        "fax",
+        "photo",
+        "comment",
+        "createdon",
+        "editedon",
+        "verified"
+      ],
+      "indexes": [
+        "web_user_attributes_internalkey_index"
+      ]
+    },
+    "user_role_vars": {
+      "columns": [
+        "tmplvarid",
+        "roleid",
+        "rank"
+      ],
+      "indexes": []
+    },
+    "user_roles": {
+      "columns": [
+        "id",
+        "name",
+        "description"
+      ],
+      "indexes": []
+    },
+    "user_settings": {
+      "columns": [
+        "user",
+        "setting_name",
+        "setting_value"
+      ],
+      "indexes": [
+        "user_settings_user_index",
+        "setting_name"
+      ]
+    },
+    "user_values": {
+      "columns": [
+        "id",
+        "tmplvarid",
+        "userid",
+        "value"
+      ],
+      "indexes": [
+        "user_values_tmplvarid_userid_unique",
+        "user_values_tmplvarid_index",
+        "user_values_userid_index"
+      ]
+    },
+    "users": {
+      "columns": [
+        "id",
+        "username",
+        "password",
+        "cachepwd",
+        "refresh_token",
+        "access_token",
+        "valid_to",
+        "verified_key"
+      ],
+      "indexes": [
+        "web_users_username_unique"
+      ]
+    }
+  }
+}
