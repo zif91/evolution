@@ -116,27 +116,38 @@ class InstallCommand extends Command
             $environment = file_get_contents(evo()->basePath('custom/.env.docker.example'));
         }
 
-        if (in_array('pgsql', $services)) {
-            $environment = str_replace('DB_CONNECTION=mysql', "DB_CONNECTION=pgsql", $environment);
-            $environment = str_replace('DB_HOST=127.0.0.1', "DB_HOST=pgsql", $environment);
-            $environment = str_replace('DB_PORT=3306', "DB_PORT=5432", $environment);
-        } elseif (in_array('mariadb', $services)) {
-            $environment = str_replace('DB_HOST=127.0.0.1', "DB_HOST=mariadb", $environment);
-        } else {
-            $environment = str_replace('DB_HOST=127.0.0.1', "DB_HOST=mysql", $environment);
+        $values = [];
+        foreach (['mysql', 'mariadb', 'pgsql'] as $service) {
+            if (in_array($service, $services)) {
+                $values += [
+                    'DB_CONNECTION' => $service === 'pgsql' ? 'pgsql' : 'mysql',
+                    'DB_HOST' => $service,
+                    'DB_PORT' => $service === 'pgsql' ? '5432' : '3306',
+                    'DB_DATABASE' => 'evo',
+                    'DB_USERNAME' => 'salo',
+                    'DB_PASSWORD' => 'password',
+                ];
+                break;
+            }
         }
-
-        $environment = str_replace('DB_USERNAME=root', "DB_USERNAME=salo", $environment);
-        $environment = preg_replace("/DB_PASSWORD=(.*)/", "DB_PASSWORD=password", $environment);
-
-        $environment = str_replace('MEMCACHED_HOST=127.0.0.1', 'MEMCACHED_HOST=memcached', $environment);
-        $environment = str_replace('REDIS_HOST=127.0.0.1', 'REDIS_HOST=redis', $environment);
-
+        foreach (['redis' => 'REDIS_HOST', 'memcached' => 'MEMCACHED_HOST'] as $service => $key) {
+            if (in_array($service, $services)) {
+                $values[$key] = $service;
+            }
+        }
         if (in_array('meilisearch', $services)) {
-            $environment .= "\nSCOUT_DRIVER=meilisearch";
-            $environment .= "\nMEILISEARCH_HOST=http://meilisearch:7700\n";
+            $values += ['SCOUT_DRIVER' => 'meilisearch', 'MEILISEARCH_HOST' => 'http://meilisearch:7700'];
+        }
+        foreach ($values as $key => $value) {
+            $line = $key . '=' . $value;
+            $pattern = '/^' . preg_quote($key, '/') . '=.*$/m';
+            $environment = preg_match($pattern, $environment)
+                ? preg_replace($pattern, $line, $environment)
+                : rtrim($environment) . "\n" . $line . "\n";
         }
 
+        // Evolution loads core/custom/.env; Compose interpolates the public .env.
+        file_put_contents(evo()->basePath('custom/.env'), $environment);
         file_put_contents(evo()->publicPath('.env'), $environment);
     }
 }
