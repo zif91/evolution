@@ -593,7 +593,7 @@ class Core extends AbstractLaravel implements Interfaces\CoreInterface
      */
     public function checkSiteStatus()
     {
-        if ($this->getConfig('site_status')) {
+        if (!$this->isDownForMaintenance()) {
             return true;
         }
 

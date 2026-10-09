@@ -43,9 +43,9 @@ trait Path
      *
      * @return string
      */
-    public function langPath()
+    public function langPath($path = '')
     {
-        return $this->path('lang');
+        return $this->path('lang' . ($path !== '' ? '/' . ltrim($path, '/') : ''));
     }
 
     /**
@@ -56,7 +56,7 @@ trait Path
      */
     public function configPath($path = '')
     {
-        return $this->path('config');
+        return $this->path('config' . ($path !== '' ? '/' . ltrim($path, '/') : ''));
     }
 
 
@@ -85,9 +85,10 @@ trait Path
      *
      * @return string
      */
-    public function storagePath()
+    public function storagePath($path = '')
     {
-        return $this->storagePath ?: EVO_STORAGE_PATH;
+        $base = $this->storagePath ?: EVO_STORAGE_PATH;
+        return $path === '' ? $base : rtrim($base, '/') . '/' . ltrim($path, '/');
     }
 
     /**
@@ -111,7 +112,8 @@ trait Path
      */
     public function databasePath($path = '')
     {
-        return $this->databasePath ?: $this->path('database' . ($path ? DIRECTORY_SEPARATOR . $path : $path));
+        $base = $this->databasePath ?: $this->path('database');
+        return $path === '' ? $base : rtrim($base, '/') . '/' . ltrim($path, '/');
     }
 
     /**
@@ -148,7 +150,7 @@ trait Path
      */
     public function bootstrapPath($path = '')
     {
-        return $this->storagePath() . 'bootstrap' . ($path ? DIRECTORY_SEPARATOR . $path : $path);
+        return rtrim($this->storagePath(), '/') . '/bootstrap' . ($path ? '/' . ltrim($path, '/') : '');
     }
 
     /**
@@ -324,7 +326,7 @@ trait Path
      */
     public function getProviders($provider)
     {
-        return [];
+        return parent::getProviders($provider);
     }
 
     /**
@@ -387,7 +389,10 @@ trait Path
      */
     public function terminate()
     {
-
+        foreach ($this->terminatingCallbacks as $callback) {
+            $this->call($callback);
+        }
+        $this->terminatingCallbacks = [];
     }
 
 }

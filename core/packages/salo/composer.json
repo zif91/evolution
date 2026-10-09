@@ -1,0 +1,39 @@
+{
+    "name": "evolution-cms/salo",
+    "description": "Docker files for running a basic evo application.",
+    "keywords": [
+        "evo",
+        "docker"
+    ],
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "illuminate/contracts": "^13.0",
+        "illuminate/console": "^13.0",
+        "illuminate/support": "^13.0"
+    },
+    "bin": [
+        "bin/salo"
+    ],
+    "autoload": {
+        "psr-4": {
+            "EvolutionCMS\\Salo\\": "src/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.x-dev"
+        },
+        "laravel": {
+            "providers": [
+                "EvolutionCMS\\Salo\\SaloServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "version": "1.0.4"
+}
