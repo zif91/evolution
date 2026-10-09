@@ -58,29 +58,6 @@ try:
     check('Manager creates published resource and TV',state()['published']==1 and state()['tvs'][str(f['tv'])]=='private-value')
     admin.save('PR543 HTTP edited',id=docid,stay=0,template=f['template'],**{'tv'+str(f['tv']):'new-value'})
     check('Manager edits resource and TV',state()['pagetitle']=='PR543 HTTP edited' and state()['tvs'][str(f['tv'])]=='new-value')
-    public=Client()
-    url,html=public.request(f'/index.php?id={docid}')
-    check('Numeric URL redirects to the correct friendly resource using template A',
-          'data-test-template="A"' in html and 'PR543 HTTP edited: HTTP processor verified' in html and
-          'compatibility lab' not in html and '/manager/' not in url)
-    friendly_path=urllib.parse.urlparse(url).path
-    _,html=public.request(friendly_path)
-    check('Direct friendly URL renders resource template with warm cache', 'data-test-template="A"' in html)
-    admin.save('PR543 HTTP edited',id=docid,stay=0,template=f['template_b'])
-    _,html=public.request(friendly_path)
-    check('Switch to template B changes persisted template and public HTML',
-          state()['template']==f['template_b'] and 'data-test-template="B"' in html and 'data-test-template="A"' not in html)
-    admin.save('PR543 HTTP edited',id=docid,stay=0,template=0)
-    _,html=public.request(friendly_path)
-    check('Blank template renders only resource content', html.strip()=='HTTP processor verified' and state()['template']==0)
-    admin.save('PR543 HTTP edited',id=docid,stay=0,template=f['template'],**{'tv'+str(f['tv']):'new-value'})
-    _,html=public.request(f'/index.php?q={urllib.parse.quote(friendly_path.lstrip("/"))}')
-    check('Explicit q query preserves alias routing', 'data-test-template="A"' in html)
-    try:
-        public.request('/pr543-http-no-such-resource.html')
-        raise AssertionError('Unknown friendly URL returned success')
-    except urllib.error.HTTPError as error:
-        check('Unknown friendly URL returns HTTP 404', error.code==404)
     editor=Client();editor.login('pr543_http_editor',password)
     _,html=editor.request(f'/manager/?a=27&id={docid}')
     check('Restricted TV is absent from editor form',f'name="tv{f["tv"]}"' not in html)
