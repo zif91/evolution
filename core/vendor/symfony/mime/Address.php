@@ -33,31 +33,29 @@ final class Address
      */
     private const FROM_STRING_PATTERN = '~(?<displayName>[^<]*)<(?<addrSpec>.*)>[^>]*~';
 
-    private static $validator;
-    private static $encoder;
+    private static EmailValidator $validator;
+    private static IdnAddressEncoder $encoder;
 
-    private $address;
-    private $name;
+    private string $address;
+    private string $name;
 
     public function __construct(string $address, string $name = '')
     {
         if (!class_exists(EmailValidator::class)) {
-            throw new LogicException(sprintf('The "%s" class cannot be used as it needs "%s"; try running "composer require egulias/email-validator".', __CLASS__, EmailValidator::class));
+            throw new LogicException(\sprintf('The "%s" class cannot be used as it needs "%s". Try running "composer require egulias/email-validator".', __CLASS__, EmailValidator::class));
         }
 
-        if (null === self::$validator) {
-            self::$validator = new EmailValidator();
-        }
+        self::$validator ??= new EmailValidator();
 
         $this->address = trim($address);
-        $this->name = trim(str_replace(["\n", "\r"], '', $name));
+        $this->name = trim(preg_replace('/[\x00-\x08\x0A-\x1F\x7F]/', '', $name));
 
         if (preg_match('/[\x00-\x1F\x7F]/', $this->address)) {
             throw new InvalidArgumentException('Email address contains control characters.');
         }
 
-        if (!self::$validator->isValid($this->address, class_exists(MessageIDValidation::class) ? new MessageIDValidation() : new RFCValidation())) {
-            throw new RfcComplianceException(sprintf('Email "%s" does not comply with addr-spec of RFC 2822.', $address));
+        if (!self::isValidAddrSpec($this->address)) {
+            throw new RfcComplianceException(\sprintf('Email "%s" does not comply with addr-spec of RFC 2822.', $address));
         }
     }
 
@@ -73,9 +71,7 @@ final class Address
 
     public function getEncodedAddress(): string
     {
-        if (null === self::$encoder) {
-            self::$encoder = new IdnAddressEncoder();
-        }
+        self::$encoder ??= new IdnAddressEncoder();
 
         return self::$encoder->encodeString($this->address);
     }
@@ -91,28 +87,21 @@ final class Address
             return '';
         }
 
-        return sprintf('"%s"', preg_replace('/"/u', '\"', $this->getName()));
+        return \sprintf('"%s"', preg_replace('/["\\\\]/', '\\\\$0', $this->getName()));
     }
 
-    /**
-     * @param Address|string $address
-     */
-    public static function create($address): self
+    public static function create(self|string $address): self
     {
         if ($address instanceof self) {
             return $address;
         }
 
-        if (!\is_string($address)) {
-            throw new InvalidArgumentException(sprintf('An address can be an instance of Address or a string ("%s" given).', get_debug_type($address)));
-        }
-
-        if (false === strpos($address, '<')) {
+        if (!str_contains($address, '<')) {
             return new self($address);
         }
 
         if (!preg_match(self::FROM_STRING_PATTERN, $address, $matches)) {
-            throw new InvalidArgumentException(sprintf('Could not parse "%s" to a "%s" instance.', $address, self::class));
+            throw new InvalidArgumentException(\sprintf('Could not parse "%s" to a "%s" instance.', $address, self::class));
         }
 
         return new self($matches['addrSpec'], trim($matches['displayName'], ' \'"'));
@@ -134,20 +123,39 @@ final class Address
     }
 
     /**
-     * @deprecated since Symfony 5.2, use "create()" instead.
+     * Returns true if this address' localpart contains at least one
+     * non-ASCII character, and false if it is only ASCII (or empty).
+     *
+     * This is a helper for Envelope, which has to decide whether to
+     * the SMTPUTF8 extensions (RFC 6530 and following) for any given
+     * message.
+     *
+     * The SMTPUTF8 extension is strictly required if any address
+     * contains a non-ASCII character in its localpart. If non-ASCII
+     * is only used in domains (e.g. horst@freiherr-von-mühlhausen.de)
+     * then it is possible to send the message using IDN encoding
+     * instead of SMTPUTF8. The most common software will display the
+     * message as intended.
      */
-    public static function fromString(string $string): self
+    public function hasUnicodeLocalpart(): bool
     {
-        trigger_deprecation('symfony/mime', '5.2', '"%s()" is deprecated, use "%s::create()" instead.', __METHOD__, __CLASS__);
+        return (bool) preg_match('/[\x80-\xFF].*@/', $this->address);
+    }
 
-        if (!str_contains($string, '<')) {
-            return new self($string, '');
+    private static function isValidAddrSpec(string $address): bool
+    {
+        // the message id validation is needed as this class also holds the ids of the Message-ID,
+        // In-Reply-To and References headers, but it accepts an unquoted "@" in the local part
+        if (!self::$validator->isValid($address, class_exists(MessageIDValidation::class) ? new MessageIDValidation() : new RFCValidation())) {
+            return false;
         }
 
-        if (!preg_match(self::FROM_STRING_PATTERN, $string, $matches)) {
-            throw new InvalidArgumentException(sprintf('Could not parse "%s" to a "%s" instance.', $string, self::class));
+        // an address that already complies with the addr-spec needs no further check: the extra
+        // "@" then belongs to the domain, e.g. inside a domain-literal (RFC 5322, 3.4.1)
+        if (substr_count($address, '@') < 2 || self::$validator->isValid($address, new RFCValidation())) {
+            return true;
         }
 
-        return new self($matches['addrSpec'], trim($matches['displayName'], ' \'"'));
+        return self::$validator->isValid(substr($address, 0, strrpos($address, '@')).'@example.com', new RFCValidation());
     }
 }

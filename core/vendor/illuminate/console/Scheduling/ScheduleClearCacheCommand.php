@@ -3,15 +3,17 @@
 namespace Illuminate\Console\Scheduling;
 
 use Illuminate\Console\Command;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'schedule:clear-cache')]
 class ScheduleClearCacheCommand extends Command
 {
     /**
-     * The console command name.
+     * The name and signature of the console command.
      *
      * @var string
      */
-    protected $name = 'schedule:clear-cache';
+    protected $signature = 'schedule:clear-cache';
 
     /**
      * The console command description.
@@ -30,9 +32,9 @@ class ScheduleClearCacheCommand extends Command
     {
         $mutexCleared = false;
 
-        foreach ($schedule->events($this->laravel) as $event) {
+        foreach ($schedule->events() as $event) {
             if ($event->mutex->exists($event)) {
-                $this->line('<info>Deleting mutex for:</info> '.$event->command);
+                $this->components->info(sprintf('Deleting mutex for [%s]', $event->command));
 
                 $event->mutex->forget($event);
 
@@ -41,7 +43,7 @@ class ScheduleClearCacheCommand extends Command
         }
 
         if (! $mutexCleared) {
-            $this->info('No mutex files were found.');
+            $this->components->info('No mutex files were found.');
         }
     }
 }

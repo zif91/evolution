@@ -11,23 +11,34 @@ use Illuminate\Support\Collection;
 use IteratorAggregate;
 use JsonSerializable;
 
+/**
+ * @template TKey of array-key
+ *
+ * @template-covariant TValue
+ *
+ * @extends AbstractCursorPaginator<TKey, TValue>
+ *
+ * @implements Arrayable<TKey, TValue>
+ * @implements ArrayAccess<TKey, TValue>
+ * @implements IteratorAggregate<TKey, TValue>
+ * @implements PaginatorContract<TKey, TValue>
+ */
 class CursorPaginator extends AbstractCursorPaginator implements Arrayable, ArrayAccess, Countable, IteratorAggregate, Jsonable, JsonSerializable, PaginatorContract
 {
     /**
      * Indicates whether there are more items in the data source.
      *
-     * @return bool
+     * @var bool
      */
     protected $hasMore;
 
     /**
      * Create a new paginator instance.
      *
-     * @param  mixed  $items
+     * @param  Collection<TKey, TValue>|Arrayable<TKey, TValue>|iterable<TKey, TValue>|null  $items
      * @param  int  $perPage
      * @param  \Illuminate\Pagination\Cursor|null  $cursor
      * @param  array  $options  (path, query, fragment, pageName)
-     * @return void
      */
     public function __construct($items, $perPage, $cursor = null, array $options = [])
     {
@@ -37,7 +48,7 @@ class CursorPaginator extends AbstractCursorPaginator implements Arrayable, Arra
             $this->{$key} = $value;
         }
 
-        $this->perPage = $perPage;
+        $this->perPage = (int) $perPage;
         $this->cursor = $cursor;
         $this->path = $this->path !== '/' ? rtrim($this->path, '/') : $this->path;
 
@@ -47,20 +58,22 @@ class CursorPaginator extends AbstractCursorPaginator implements Arrayable, Arra
     /**
      * Set the items for the paginator.
      *
-     * @param  mixed  $items
+     * @param  Collection<TKey, TValue>|Arrayable<TKey, TValue>|iterable<TKey, TValue>|null  $items
      * @return void
      */
     protected function setItems($items)
     {
-        $this->items = $items instanceof Collection ? $items : Collection::make($items);
+        $this->items = $items instanceof Collection ? $items : new Collection($items);
 
         $this->hasMore = $this->items->count() > $this->perPage;
 
         $this->items = $this->items->slice(0, $this->perPage);
 
         if (! is_null($this->cursor) && $this->cursor->pointsToPreviousItems()) {
-            $this->items = $this->items->reverse()->values();
+            $this->items = $this->items->reverse();
         }
+
+        $this->items = $this->items->values();
     }
 
     /**
@@ -122,6 +135,16 @@ class CursorPaginator extends AbstractCursorPaginator implements Arrayable, Arra
     }
 
     /**
+     * Determine if the paginator is on the last page.
+     *
+     * @return bool
+     */
+    public function onLastPage()
+    {
+        return ! $this->hasMorePages();
+    }
+
+    /**
      * Get the instance as an array.
      *
      * @return array
@@ -132,7 +155,9 @@ class CursorPaginator extends AbstractCursorPaginator implements Arrayable, Arra
             'data' => $this->items->toArray(),
             'path' => $this->path(),
             'per_page' => $this->perPage(),
+            'next_cursor' => $this->nextCursor()?->encode(),
             'next_page_url' => $this->nextPageUrl(),
+            'prev_cursor' => $this->previousCursor()?->encode(),
             'prev_page_url' => $this->previousPageUrl(),
         ];
     }
@@ -142,8 +167,7 @@ class CursorPaginator extends AbstractCursorPaginator implements Arrayable, Arra
      *
      * @return array
      */
-    #[\ReturnTypeWillChange]
-    public function jsonSerialize()
+    public function jsonSerialize(): array
     {
         return $this->toArray();
     }
@@ -157,5 +181,16 @@ class CursorPaginator extends AbstractCursorPaginator implements Arrayable, Arra
     public function toJson($options = 0)
     {
         return json_encode($this->jsonSerialize(), $options);
+    }
+
+    /**
+     * Convert the object to pretty print formatted JSON.
+     *
+     * @param  int  $options
+     * @return string
+     */
+    public function toPrettyJson(int $options = 0)
+    {
+        return $this->toJson(JSON_PRETTY_PRINT | $options);
     }
 }

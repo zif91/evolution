@@ -4,16 +4,20 @@ namespace Illuminate\Database\Console\Factories;
 
 use Illuminate\Console\GeneratorCommand;
 use Illuminate\Support\Str;
-use Symfony\Component\Console\Input\InputOption;
+use Illuminate\Support\Stringable;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'make:factory')]
 class FactoryMakeCommand extends GeneratorCommand
 {
     /**
-     * The console command name.
+     * The name and signature of the console command.
      *
      * @var string
      */
-    protected $name = 'make:factory';
+    protected $signature = 'make:factory
+                    {name : The name of the factory}
+                    {--m|model= : The name of the model}';
 
     /**
      * The console command description.
@@ -63,16 +67,14 @@ class FactoryMakeCommand extends GeneratorCommand
         $factory = class_basename(Str::ucfirst(str_replace('Factory', '', $name)));
 
         $namespaceModel = $this->option('model')
-                        ? $this->qualifyModel($this->option('model'))
-                        : $this->qualifyModel($this->guessModelName($name));
+            ? $this->qualifyModel($this->option('model'))
+            : $this->qualifyModel($this->guessModelName($name));
 
         $model = class_basename($namespaceModel);
 
-        if (Str::startsWith($namespaceModel, $this->rootNamespace().'Models')) {
-            $namespace = Str::beforeLast('Database\\Factories\\'.Str::after($namespaceModel, $this->rootNamespace().'Models\\'), '\\');
-        } else {
-            $namespace = 'Database\\Factories';
-        }
+        $namespace = $this->getNamespace(
+            Str::replaceFirst($this->rootNamespace(), 'Database\\Factories\\', $this->qualifyClass($this->getNameInput()))
+        );
 
         $replace = [
             '{{ factoryNamespace }}' => $namespace,
@@ -99,7 +101,7 @@ class FactoryMakeCommand extends GeneratorCommand
      */
     protected function getPath($name)
     {
-        $name = (string) Str::of($name)->replaceFirst($this->rootNamespace(), '')->finish('Factory');
+        $name = (new Stringable($name))->replaceFirst($this->rootNamespace(), '')->finish('Factory')->value();
 
         return $this->laravel->databasePath().'/factories/'.str_replace('\\', '/', $name).'.php';
     }
@@ -112,7 +114,7 @@ class FactoryMakeCommand extends GeneratorCommand
      */
     protected function guessModelName($name)
     {
-        if (Str::endsWith($name, 'Factory')) {
+        if (str_ends_with($name, 'Factory')) {
             $name = substr($name, 0, -7);
         }
 
@@ -127,17 +129,5 @@ class FactoryMakeCommand extends GeneratorCommand
         }
 
         return $this->rootNamespace().'Model';
-    }
-
-    /**
-     * Get the console command options.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['model', 'm', InputOption::VALUE_OPTIONAL, 'The name of the model'],
-        ];
     }
 }

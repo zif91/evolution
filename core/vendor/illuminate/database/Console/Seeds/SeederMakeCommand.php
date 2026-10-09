@@ -3,15 +3,18 @@
 namespace Illuminate\Database\Console\Seeds;
 
 use Illuminate\Console\GeneratorCommand;
+use Illuminate\Support\Str;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'make:seeder')]
 class SeederMakeCommand extends GeneratorCommand
 {
     /**
-     * The console command name.
+     * The name and signature of the console command.
      *
      * @var string
      */
-    protected $name = 'make:seeder';
+    protected $signature = 'make:seeder {name : The name of the seeder}';
 
     /**
      * The console command description.
@@ -68,21 +71,22 @@ class SeederMakeCommand extends GeneratorCommand
      */
     protected function getPath($name)
     {
+        $name = str_replace('\\', '/', Str::replaceFirst($this->rootNamespace(), '', $name));
+
         if (is_dir($this->laravel->databasePath().'/seeds')) {
             return $this->laravel->databasePath().'/seeds/'.$name.'.php';
-        } else {
-            return $this->laravel->databasePath().'/seeders/'.$name.'.php';
         }
+
+        return $this->laravel->databasePath().'/seeders/'.$name.'.php';
     }
 
     /**
-     * Parse the class name and format according to the root namespace.
+     * Get the root namespace for the class.
      *
-     * @param  string  $name
      * @return string
      */
-    protected function qualifyClass($name)
+    protected function rootNamespace()
     {
-        return $name;
+        return 'Database\Seeders\\';
     }
 }

@@ -29,19 +29,15 @@ class PublishCommand extends Command
     {
         $this->call('vendor:publish', ['--tag' => 'salo']);
 
-        file_put_contents(
-            $this->laravel->basePath('docker-compose.yml'),
-            str_replace(
-                [
-                    './vendor/laravel/salo/runtimes/8.2',
-                    './vendor/laravel/salo/runtimes/7.4',
-                ],
-                [
-                    './docker/8.2',
-                    './docker/7.4',
-                ],
-                file_get_contents($this->laravel->basePath('docker-compose.yml'))
-            )
-        );
+        $composePath = $this->laravel->publicPath('docker-compose.yml');
+        if (!is_file($composePath)) {
+            $this->warn('Run salo:install before publishing the Compose configuration.');
+            return;
+        }
+        file_put_contents($composePath, str_replace(
+            'core/vendor/evolution-cms/salo/runtimes/8.3',
+            'core/docker/8.3',
+            file_get_contents($composePath)
+        ));
     }
 }

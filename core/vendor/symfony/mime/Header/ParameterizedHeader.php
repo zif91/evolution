@@ -25,8 +25,8 @@ final class ParameterizedHeader extends UnstructuredHeader
      */
     public const TOKEN_REGEX = '(?:[\x21\x23-\x27\x2A\x2B\x2D\x2E\x30-\x39\x41-\x5A\x5E-\x7E]+)';
 
-    private $encoder;
-    private $parameters = [];
+    private ?Rfc2231Encoder $encoder = null;
+    private array $parameters = [];
 
     public function __construct(string $name, string $value, array $parameters = [])
     {
@@ -41,7 +41,7 @@ final class ParameterizedHeader extends UnstructuredHeader
         }
     }
 
-    public function setParameter(string $parameter, ?string $value)
+    public function setParameter(string $parameter, ?string $value): void
     {
         $this->setParameters(array_merge($this->getParameters(), [$parameter => $value]));
     }
@@ -54,7 +54,7 @@ final class ParameterizedHeader extends UnstructuredHeader
     /**
      * @param string[] $parameters
      */
-    public function setParameters(array $parameters)
+    public function setParameters(array $parameters): void
     {
         $this->parameters = $parameters;
     }
@@ -117,7 +117,7 @@ final class ParameterizedHeader extends UnstructuredHeader
         if (!preg_match('/^'.self::TOKEN_REGEX.'$/D', $value)) {
             // TODO: text, or something else??
             // ... and it's not ascii
-            if (!preg_match('/^[\x00-\x08\x0B\x0C\x0E-\x7F]*$/D', $value)) {
+            if (!preg_match('/^[\x20-\x7E]*$/D', $value)) {
                 $encoded = true;
                 // Allow space for the indices, charset and language
                 $maxValueLength = $this->getMaxLineLength() - \strlen($name.'*N*="";') - 1;
@@ -162,9 +162,9 @@ final class ParameterizedHeader extends UnstructuredHeader
             }
 
             return implode(";\r\n ", $paramLines);
-        } else {
-            return $name.$this->getEndOfParameterValue($valueLines[0], $encoded, true);
         }
+
+        return $name.$this->getEndOfParameterValue($valueLines[0], $encoded, true);
     }
 
     /**

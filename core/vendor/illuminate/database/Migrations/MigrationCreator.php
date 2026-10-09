@@ -4,6 +4,7 @@ namespace Illuminate\Database\Migrations;
 
 use Closure;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
@@ -26,16 +27,22 @@ class MigrationCreator
     /**
      * The registered post create hooks.
      *
-     * @var array
+     * @var (\Closure(string, string): void)[]
      */
     protected $postCreate = [];
+
+    /**
+     * The path given to the create method.
+     *
+     * @var string|null
+     */
+    protected $currentMigrationPath = null;
 
     /**
      * Create a new migration creator instance.
      *
      * @param  \Illuminate\Filesystem\Filesystem  $files
      * @param  string  $customStubPath
-     * @return void
      */
     public function __construct(Filesystem $files, $customStubPath)
     {
@@ -63,18 +70,18 @@ class MigrationCreator
         // various place-holders, save the file, and run the post create event.
         $stub = $this->getStub($table, $create);
 
-        $path = $this->getPath($name, $path);
+        $path = $this->getCollisionFreePath($name, $path);
 
         $this->files->ensureDirectoryExists(dirname($path));
 
         $this->files->put(
-            $path, $this->populateStub($name, $stub, $table)
+            $path, $this->populateStub($stub, $table)
         );
 
         // Next, we will fire any hooks that are supposed to fire after a migration is
         // created. Once that is done we'll be ready to return the full path to the
         // migration file so it can be used however it's needed by the developer.
-        $this->firePostCreateHooks($table);
+        $this->firePostCreateHooks($table, $path);
 
         return $path;
     }
@@ -83,7 +90,7 @@ class MigrationCreator
      * Ensure that a migration with the given name doesn't already exist.
      *
      * @param  string  $name
-     * @param  string  $migrationPath
+     * @param  string|null  $migrationPath
      * @return void
      *
      * @throws \InvalidArgumentException
@@ -114,16 +121,16 @@ class MigrationCreator
     {
         if (is_null($table)) {
             $stub = $this->files->exists($customPath = $this->customStubPath.'/migration.stub')
-                            ? $customPath
-                            : $this->stubPath().'/migration.stub';
+                ? $customPath
+                : $this->stubPath().'/migration.stub';
         } elseif ($create) {
             $stub = $this->files->exists($customPath = $this->customStubPath.'/migration.create.stub')
-                            ? $customPath
-                            : $this->stubPath().'/migration.create.stub';
+                ? $customPath
+                : $this->stubPath().'/migration.create.stub';
         } else {
             $stub = $this->files->exists($customPath = $this->customStubPath.'/migration.update.stub')
-                            ? $customPath
-                            : $this->stubPath().'/migration.update.stub';
+                ? $customPath
+                : $this->stubPath().'/migration.update.stub';
         }
 
         return $this->files->get($stub);
@@ -132,18 +139,12 @@ class MigrationCreator
     /**
      * Populate the place-holders in the migration stub.
      *
-     * @param  string  $name
      * @param  string  $stub
      * @param  string|null  $table
      * @return string
      */
-    protected function populateStub($name, $stub, $table)
+    protected function populateStub($stub, $table)
     {
-        $stub = str_replace(
-            ['DummyClass', '{{ class }}', '{{class}}'],
-            $this->getClassName($name), $stub
-        );
-
         // Here we will replace the table place-holders with the table specified by
         // the developer, which is useful for quickly creating a tables creation
         // or update migration from the console instead of typing it manually.
@@ -161,7 +162,7 @@ class MigrationCreator
      * Get the class name of a migration name.
      *
      * @param  string  $name
-     * @return string
+     * @return class-string<\Illuminate\Database\Migrations\Migration>
      */
     protected function getClassName($name)
     {
@@ -181,22 +182,41 @@ class MigrationCreator
     }
 
     /**
+     * Get the full path to the migration.
+     *
+     * @param  string  $name
+     * @param  string  $path
+     * @return string
+     */
+    protected function getCollisionFreePath($name, $path)
+    {
+        $this->currentMigrationPath = $path;
+
+        $path = $this->getPath($name, $path);
+
+        $this->currentMigrationPath = null;
+
+        return $path;
+    }
+
+    /**
      * Fire the registered post create hooks.
      *
      * @param  string|null  $table
+     * @param  string  $path
      * @return void
      */
-    protected function firePostCreateHooks($table)
+    protected function firePostCreateHooks($table, $path)
     {
         foreach ($this->postCreate as $callback) {
-            $callback($table);
+            $callback($table, $path);
         }
     }
 
     /**
      * Register a post migration create hook.
      *
-     * @param  \Closure  $callback
+     * @param  (\Closure(string, string): void)  $callback
      * @return void
      */
     public function afterCreate(Closure $callback)
@@ -211,7 +231,19 @@ class MigrationCreator
      */
     protected function getDatePrefix()
     {
-        return date('Y_m_d_His');
+        $path = $this->currentMigrationPath;
+
+        if ($path === null) {
+            return date('Y_m_d_His');
+        }
+
+        $date = Date::now();
+
+        while ($this->files->glob($path.'/'.$date->format('Y_m_d_His').'_*.php')) {
+            $date = $date->addSecond();
+        }
+
+        return $date->format('Y_m_d_His');
     }
 
     /**

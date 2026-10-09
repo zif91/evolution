@@ -9,7 +9,7 @@ interface ConnectionInterface
     /**
      * Begin a fluent query against a database table.
      *
-     * @param  \Closure|\Illuminate\Database\Query\Builder|string  $table
+     * @param  \Closure|\Illuminate\Database\Query\Builder|\UnitEnum|string  $table
      * @param  string|null  $as
      * @return \Illuminate\Database\Query\Builder
      */
@@ -18,8 +18,8 @@ interface ConnectionInterface
     /**
      * Get a new raw query expression.
      *
-     * @param  mixed  $value
-     * @return \Illuminate\Database\Query\Expression
+     * @param  literal-string|int|float  $value
+     * @return \Illuminate\Contracts\Database\Query\Expression
      */
     public function raw($value);
 
@@ -34,14 +34,27 @@ interface ConnectionInterface
     public function selectOne($query, $bindings = [], $useReadPdo = true);
 
     /**
+     * Run a select statement and return the first column of the first row.
+     *
+     * @param  string  $query
+     * @param  array  $bindings
+     * @param  bool  $useReadPdo
+     * @return mixed
+     *
+     * @throws \Illuminate\Database\MultipleColumnsSelectedException
+     */
+    public function scalar($query, $bindings = [], $useReadPdo = true);
+
+    /**
      * Run a select statement against the database.
      *
      * @param  string  $query
      * @param  array  $bindings
      * @param  bool  $useReadPdo
+     * @param  array  $fetchUsing
      * @return array
      */
-    public function select($query, $bindings = [], $useReadPdo = true);
+    public function select($query, $bindings = [], $useReadPdo = true, array $fetchUsing = []);
 
     /**
      * Run a select statement against the database and returns a generator.
@@ -49,9 +62,10 @@ interface ConnectionInterface
      * @param  string  $query
      * @param  array  $bindings
      * @param  bool  $useReadPdo
+     * @param  array  $fetchUsing
      * @return \Generator
      */
-    public function cursor($query, $bindings = [], $useReadPdo = true);
+    public function cursor($query, $bindings = [], $useReadPdo = true, array $fetchUsing = []);
 
     /**
      * Run an insert statement against the database.
@@ -101,7 +115,7 @@ interface ConnectionInterface
     /**
      * Run a raw, unprepared query against the PDO connection.
      *
-     * @param  string  $query
+     * @param  literal-string  $query
      * @return bool
      */
     public function unprepared($query);
@@ -117,9 +131,11 @@ interface ConnectionInterface
     /**
      * Execute a Closure within a transaction.
      *
-     * @param  \Closure  $callback
+     * @template TReturn
+     *
+     * @param  (\Closure(static): TReturn)  $callback
      * @param  int  $attempts
-     * @return mixed
+     * @return TReturn
      *
      * @throws \Throwable
      */

@@ -2,35 +2,40 @@
     "name": "illuminate/log",
     "description": "The Illuminate Log package.",
     "license": "MIT",
-    "homepage": "https://laravel.com",
-    "support": {
-        "issues": "https://github.com/laravel/framework/issues",
-        "source": "https://github.com/laravel/framework"
-    },
     "authors": [
         {
             "name": "Taylor Otwell",
             "email": "taylor@laravel.com"
         }
     ],
-    "require": {
-        "php": "^7.3|^8.0",
-        "illuminate/contracts": "^8.0",
-        "illuminate/support": "^8.0",
-        "monolog/monolog": "^2.0"
+    "homepage": "https://laravel.com",
+    "support": {
+        "issues": "https://github.com/laravel/framework/issues",
+        "source": "https://github.com/laravel/framework"
     },
+    "require": {
+        "php": "^8.3",
+        "illuminate/conditionable": "^13.0",
+        "illuminate/contracts": "^13.0",
+        "illuminate/support": "^13.0",
+        "monolog/monolog": "^3.10",
+        "psr/log": "^1.0 || ^2.0 || ^3.0"
+    },
+    "provide": {
+        "psr/log-implementation": "1.0 || 2.0 || 3.0"
+    },
+    "minimum-stability": "dev",
     "autoload": {
         "psr-4": {
             "Illuminate\\Log\\": ""
         }
     },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "8.x-dev"
-        }
-    },
     "config": {
         "sort-packages": true
     },
-    "minimum-stability": "dev"
+    "extra": {
+        "branch-alias": {
+            "dev-master": "13.0.x-dev"
+        }
+    }
 }

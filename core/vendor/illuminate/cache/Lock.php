@@ -4,8 +4,11 @@ namespace Illuminate\Cache;
 
 use Illuminate\Contracts\Cache\Lock as LockContract;
 use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\InteractsWithTime;
+use Illuminate\Support\Sleep;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 abstract class Lock implements LockContract
 {
@@ -45,7 +48,6 @@ abstract class Lock implements LockContract
      * @param  string  $name
      * @param  int  $seconds
      * @param  string|null  $owner
-     * @return void
      */
     public function __construct($name, $seconds, $owner = null)
     {
@@ -75,7 +77,7 @@ abstract class Lock implements LockContract
     /**
      * Returns the owner value written into the driver for this lock.
      *
-     * @return string
+     * @return string|null
      */
     abstract protected function getCurrentOwner();
 
@@ -111,14 +113,18 @@ abstract class Lock implements LockContract
      */
     public function block($seconds, $callback = null)
     {
-        $starting = $this->currentTime();
+        $starting = ((int) Carbon::now()->format('Uu')) / 1000;
+
+        $milliseconds = $seconds * 1000;
 
         while (! $this->acquire()) {
-            usleep($this->sleepMilliseconds * 1000);
+            $now = ((int) Carbon::now()->format('Uu')) / 1000;
 
-            if ($this->currentTime() - $seconds >= $starting) {
+            if (($now + $this->sleepMilliseconds - $milliseconds) >= $starting) {
                 throw new LockTimeoutException;
             }
+
+            Sleep::usleep($this->sleepMilliseconds * 1000);
         }
 
         if (is_callable($callback)) {
@@ -133,6 +139,17 @@ abstract class Lock implements LockContract
     }
 
     /**
+     * Attempt to refresh the lock for the given number of seconds.
+     *
+     * @param  int|null  $seconds
+     * @return bool
+     */
+    public function refresh($seconds = null)
+    {
+        throw new RuntimeException('This lock driver does not support refreshing locks.');
+    }
+
+    /**
      * Returns the current owner of the lock.
      *
      * @return string
@@ -143,13 +160,34 @@ abstract class Lock implements LockContract
     }
 
     /**
+     * Determine if the lock is currently held by any process.
+     *
+     * @return bool
+     */
+    public function isLocked(): bool
+    {
+        return $this->getCurrentOwner() !== null;
+    }
+
+    /**
      * Determines whether this lock is allowed to release the lock in the driver.
      *
      * @return bool
      */
-    protected function isOwnedByCurrentProcess()
+    public function isOwnedByCurrentProcess()
     {
-        return $this->getCurrentOwner() === $this->owner;
+        return $this->isOwnedBy($this->owner);
+    }
+
+    /**
+     * Determine whether this lock is owned by the given identifier.
+     *
+     * @param  string|null  $owner
+     * @return bool
+     */
+    public function isOwnedBy($owner)
+    {
+        return $this->getCurrentOwner() === $owner;
     }
 
     /**

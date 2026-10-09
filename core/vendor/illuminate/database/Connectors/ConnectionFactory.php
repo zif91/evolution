@@ -4,6 +4,8 @@ namespace Illuminate\Database\Connectors;
 
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Connection;
+use Illuminate\Database\Connectors\Concerns\ConfiguresPooledConnections;
+use Illuminate\Database\MariaDbConnection;
 use Illuminate\Database\MySqlConnection;
 use Illuminate\Database\PostgresConnection;
 use Illuminate\Database\SQLiteConnection;
@@ -14,6 +16,8 @@ use PDOException;
 
 class ConnectionFactory
 {
+    use ConfiguresPooledConnections;
+
     /**
      * The IoC container instance.
      *
@@ -25,7 +29,6 @@ class ConnectionFactory
      * Create a new connection factory instance.
      *
      * @param  \Illuminate\Contracts\Container\Container  $container
-     * @return void
      */
     public function __construct(Container $container)
     {
@@ -42,6 +45,10 @@ class ConnectionFactory
     public function make(array $config, $name = null)
     {
         $config = $this->parseConfig($config, $name);
+
+        if (($config['driver'] ?? null) === 'pgsql') {
+            $config = $this->ensurePooledPostgresIsProperlyConfigured($config);
+        }
 
         if (isset($config['read'])) {
             return $this->createReadWriteConnection($config);
@@ -72,9 +79,16 @@ class ConnectionFactory
     {
         $pdo = $this->createPdoResolver($config);
 
-        return $this->createConnection(
+        $connection = $this->createConnection(
             $config['driver'], $pdo, $config['database'], $config['prefix'], $config
         );
+
+        if ($this->hasDirectConnection($config)) {
+            $connection->setDirectPdo($this->createDirectPdo($config))
+                ->setDirectPdoConfig($this->getDirectConfig($config));
+        }
+
+        return $connection;
     }
 
     /**
@@ -87,7 +101,16 @@ class ConnectionFactory
     {
         $connection = $this->createSingleConnection($this->getWriteConfig($config));
 
-        return $connection->setReadPdo($this->createReadPdo($config));
+        $connection
+            ->setReadPdo($this->createReadPdo($config))
+            ->setReadPdoConfig($this->getReadConfig($config));
+
+        if ($this->hasDirectConnection($config)) {
+            $connection->setDirectPdo($this->createDirectPdo($config))
+                ->setDirectPdoConfig($this->getDirectConfig($config));
+        }
+
+        return $connection;
     }
 
     /**
@@ -137,8 +160,8 @@ class ConnectionFactory
     protected function getReadWriteConfig(array $config, $type)
     {
         return isset($config[$type][0])
-                        ? Arr::random($config[$type])
-                        : $config[$type];
+            ? Arr::random($config[$type])
+            : $config[$type];
     }
 
     /**
@@ -154,6 +177,17 @@ class ConnectionFactory
     }
 
     /**
+     * Create a new PDO instance for direct connections.
+     *
+     * @param  array  $config
+     * @return \Closure
+     */
+    protected function createDirectPdo(array $config)
+    {
+        return $this->createPdoResolver($this->getDirectConfig($config));
+    }
+
+    /**
      * Create a new Closure that resolves to a PDO instance.
      *
      * @param  array  $config
@@ -162,8 +196,8 @@ class ConnectionFactory
     protected function createPdoResolver(array $config)
     {
         return array_key_exists('host', $config)
-                            ? $this->createPdoResolverWithHosts($config)
-                            : $this->createPdoResolverWithoutHosts($config);
+            ? $this->createPdoResolverWithHosts($config)
+            : $this->createPdoResolverWithoutHosts($config);
     }
 
     /**
@@ -177,17 +211,21 @@ class ConnectionFactory
     protected function createPdoResolverWithHosts(array $config)
     {
         return function () use ($config) {
-            foreach (Arr::shuffle($hosts = $this->parseHosts($config)) as $key => $host) {
+            $exception = null;
+
+            foreach (Arr::shuffle($this->parseHosts($config)) as $host) {
                 $config['host'] = $host;
 
                 try {
                     return $this->createConnector($config)->connect($config);
                 } catch (PDOException $e) {
-                    continue;
+                    $exception = $e;
                 }
             }
 
-            throw $e;
+            if ($exception !== null) {
+                throw $exception;
+            }
         };
     }
 
@@ -218,9 +256,7 @@ class ConnectionFactory
      */
     protected function createPdoResolverWithoutHosts(array $config)
     {
-        return function () use ($config) {
-            return $this->createConnector($config)->connect($config);
-        };
+        return fn () => $this->createConnector($config)->connect($config);
     }
 
     /**
@@ -241,18 +277,14 @@ class ConnectionFactory
             return $this->container->make($key);
         }
 
-        switch ($config['driver']) {
-            case 'mysql':
-                return new MySqlConnector;
-            case 'pgsql':
-                return new PostgresConnector;
-            case 'sqlite':
-                return new SQLiteConnector;
-            case 'sqlsrv':
-                return new SqlServerConnector;
-        }
-
-        throw new InvalidArgumentException("Unsupported driver [{$config['driver']}].");
+        return match ($config['driver']) {
+            'mysql' => new MySqlConnector,
+            'mariadb' => new MariaDbConnector,
+            'pgsql' => new PostgresConnector,
+            'sqlite' => new SQLiteConnector,
+            'sqlsrv' => new SqlServerConnector,
+            default => throw new InvalidArgumentException("Unsupported driver [{$config['driver']}]."),
+        };
     }
 
     /**
@@ -273,17 +305,13 @@ class ConnectionFactory
             return $resolver($connection, $database, $prefix, $config);
         }
 
-        switch ($driver) {
-            case 'mysql':
-                return new MySqlConnection($connection, $database, $prefix, $config);
-            case 'pgsql':
-                return new PostgresConnection($connection, $database, $prefix, $config);
-            case 'sqlite':
-                return new SQLiteConnection($connection, $database, $prefix, $config);
-            case 'sqlsrv':
-                return new SqlServerConnection($connection, $database, $prefix, $config);
-        }
-
-        throw new InvalidArgumentException("Unsupported driver [{$driver}].");
+        return match ($driver) {
+            'mysql' => new MySqlConnection($connection, $database, $prefix, $config),
+            'mariadb' => new MariaDbConnection($connection, $database, $prefix, $config),
+            'pgsql' => new PostgresConnection($connection, $database, $prefix, $config),
+            'sqlite' => new SQLiteConnection($connection, $database, $prefix, $config),
+            'sqlsrv' => new SqlServerConnection($connection, $database, $prefix, $config),
+            default => throw new InvalidArgumentException("Unsupported driver [{$driver}]."),
+        };
     }
 }

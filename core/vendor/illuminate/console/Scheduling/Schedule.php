@@ -2,6 +2,7 @@
 
 namespace Illuminate\Console\Scheduling;
 
+use BadMethodCallException;
 use Closure;
 use DateTimeInterface;
 use Illuminate\Bus\UniqueLock;
@@ -13,21 +14,36 @@ use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\CallQueuedClosure;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\ProcessUtils;
-use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Macroable;
 use RuntimeException;
+use Symfony\Component\Console\Command\Command as SymfonyCommand;
 
+use function Illuminate\Support\enum_value;
+
+/**
+ * @mixin \Illuminate\Console\Scheduling\PendingEventAttributes
+ */
 class Schedule
 {
-    use Macroable;
+    use Macroable {
+        __call as macroCall;
+    }
 
     const SUNDAY = 0;
+
     const MONDAY = 1;
+
     const TUESDAY = 2;
+
     const WEDNESDAY = 3;
+
     const THURSDAY = 4;
+
     const FRIDAY = 5;
+
     const SATURDAY = 6;
 
     /**
@@ -66,10 +82,51 @@ class Schedule
     protected $dispatcher;
 
     /**
+     * The cache of mutex results.
+     *
+     * @var array<string, bool>
+     */
+    protected $mutexCache = [];
+
+    /**
+     * The attributes to pass to the event.
+     *
+     * @var \Illuminate\Console\Scheduling\PendingEventAttributes|null
+     */
+    protected $attributes;
+
+    /**
+     * The schedule group attributes stack.
+     *
+     * @var array<int, PendingEventAttributes>
+     */
+    protected array $groupStack = [];
+
+    /**
+     * Indicates if the schedule should check for the paused signal in the cache.
+     *
+     * @var bool
+     */
+    public static $pausable = true;
+
+    /**
+     * Indicates if the schedule should check for the interrupt signal in the cache.
+     *
+     * @var bool
+     */
+    public static $interruptible = true;
+
+    /**
+     * Indicates if every event should only run on one server for each cron expression.
+     *
+     * @var bool
+     */
+    public static $alwaysOnOneServer = false;
+
+    /**
      * Create a new schedule instance.
      *
      * @param  \DateTimeZone|string|null  $timezone
-     * @return void
      *
      * @throws \RuntimeException
      */
@@ -86,12 +143,12 @@ class Schedule
         $container = Container::getInstance();
 
         $this->eventMutex = $container->bound(EventMutex::class)
-                                ? $container->make(EventMutex::class)
-                                : $container->make(CacheEventMutex::class);
+            ? $container->make(EventMutex::class)
+            : $container->make(CacheEventMutex::class);
 
         $this->schedulingMutex = $container->bound(SchedulingMutex::class)
-                                ? $container->make(SchedulingMutex::class)
-                                : $container->make(CacheSchedulingMutex::class);
+            ? $container->make(SchedulingMutex::class)
+            : $container->make(CacheSchedulingMutex::class);
     }
 
     /**
@@ -107,18 +164,30 @@ class Schedule
             $this->eventMutex, $callback, $parameters, $this->timezone
         );
 
+        $this->mergePendingAttributes($event);
+
         return $event;
     }
 
     /**
      * Add a new Artisan command event to the schedule.
      *
-     * @param  string  $command
+     * @param  \Symfony\Component\Console\Command\Command|string  $command
      * @param  array  $parameters
      * @return \Illuminate\Console\Scheduling\Event
      */
     public function command($command, array $parameters = [])
     {
+        if ($command instanceof SymfonyCommand) {
+            $command = get_class($command);
+
+            $command = Container::getInstance()->make($command);
+
+            return $this->exec(
+                Application::formatCommandString($command->getName()), $parameters,
+            )->description($command->getDescription());
+        }
+
         if (class_exists($command)) {
             $command = Container::getInstance()->make($command);
 
@@ -136,21 +205,40 @@ class Schedule
      * Add a new job callback event to the schedule.
      *
      * @param  object|string  $job
-     * @param  string|null  $queue
-     * @param  string|null  $connection
+     * @param  \UnitEnum|string|null  $queue
+     * @param  \UnitEnum|string|null  $connection
      * @return \Illuminate\Console\Scheduling\CallbackEvent
      */
     public function job($job, $queue = null, $connection = null)
     {
-        return $this->call(function () use ($job, $queue, $connection) {
-            $job = is_string($job) ? Container::getInstance()->make($job) : $job;
+        $jobName = $job;
 
-            if ($job instanceof ShouldQueue) {
-                $this->dispatchToQueue($job, $queue ?? $job->queue, $connection ?? $job->connection);
-            } else {
-                $this->dispatchNow($job);
-            }
-        })->name(is_string($job) ? $job : get_class($job));
+        $queue = enum_value($queue);
+        $connection = enum_value($connection);
+
+        if (! is_string($job)) {
+            $jobName = method_exists($job, 'displayName')
+                ? $job->displayName()
+                : $job::class;
+        }
+
+        $this->events[] = $event = new CallbackEvent(
+            $this->eventMutex, function () use ($job, $queue, $connection) {
+                $job = is_string($job) ? Container::getInstance()->make($job) : $job;
+
+                if ($job instanceof ShouldQueue) {
+                    $this->dispatchToQueue($job, $queue ?? $job->queue, $connection ?? $job->connection);
+                } else {
+                    $this->dispatchNow($job);
+                }
+            }, [], $this->timezone
+        );
+
+        $event->name($jobName);
+
+        $this->mergePendingAttributes($event);
+
+        return $event;
     }
 
     /**
@@ -229,13 +317,60 @@ class Schedule
      */
     public function exec($command, array $parameters = [])
     {
-        if (count($parameters)) {
+        if ($parameters !== []) {
             $command .= ' '.$this->compileParameters($parameters);
         }
 
         $this->events[] = $event = new Event($this->eventMutex, $command, $this->timezone);
 
+        $this->mergePendingAttributes($event);
+
         return $event;
+    }
+
+    /**
+     * Create new schedule group.
+     *
+     * @param  \Closure  $events
+     * @return void
+     *
+     * @throws \RuntimeException
+     */
+    public function group(Closure $events)
+    {
+        if ($this->attributes === null) {
+            throw new RuntimeException('Invoke an attribute method such as Schedule::daily() before defining a schedule group.');
+        }
+
+        $this->groupStack[] = $this->attributes;
+        $this->attributes = null;
+
+        $events($this);
+
+        array_pop($this->groupStack);
+    }
+
+    /**
+     * Merge the current group attributes with the given event.
+     *
+     * @param  \Illuminate\Console\Scheduling\Event  $event
+     * @return void
+     */
+    protected function mergePendingAttributes(Event $event)
+    {
+        if (isset($this->attributes)) {
+            $this->attributes->mergeAttributes($event);
+
+            $this->attributes = null;
+
+            return;
+        }
+
+        if (! empty($this->groupStack)) {
+            $group = array_last($this->groupStack);
+
+            $group->mergeAttributes($event);
+        }
     }
 
     /**
@@ -246,7 +381,7 @@ class Schedule
      */
     protected function compileParameters(array $parameters)
     {
-        return collect($parameters)->map(function ($value, $key) {
+        return (new Collection($parameters))->map(function ($value, $key) {
             if (is_array($value)) {
                 return $this->compileArrayInput($key, $value);
             }
@@ -268,15 +403,15 @@ class Schedule
      */
     public function compileArrayInput($key, $value)
     {
-        $value = collect($value)->map(function ($value) {
+        $value = (new Collection($value))->map(function ($value) {
             return ProcessUtils::escapeArgument($value);
         });
 
-        if (Str::startsWith($key, '--')) {
+        if (str_starts_with($key, '--')) {
             $value = $value->map(function ($value) use ($key) {
                 return "{$key}={$value}";
             });
-        } elseif (Str::startsWith($key, '-')) {
+        } elseif (str_starts_with($key, '-')) {
             $value = $value->map(function ($value) use ($key) {
                 return "{$key} {$value}";
             });
@@ -294,7 +429,7 @@ class Schedule
      */
     public function serverShouldRun(Event $event, DateTimeInterface $time)
     {
-        return $this->schedulingMutex->create($event, $time);
+        return $this->mutexCache[$event->mutexName()] ??= $this->schedulingMutex->create($event, $time);
     }
 
     /**
@@ -305,7 +440,7 @@ class Schedule
      */
     public function dueEvents($app)
     {
-        return collect($this->events)->filter->isDue($app);
+        return (new Collection($this->events()))->filter->isDue($app);
     }
 
     /**
@@ -315,17 +450,43 @@ class Schedule
      */
     public function events()
     {
+        if (static::$alwaysOnOneServer) {
+            foreach ($this->events as $event) {
+                if ($event instanceof CallbackEvent && is_null($event->description)) {
+                    continue;
+                }
+
+                $event->onOneServer();
+            }
+        }
+
         return $this->events;
+    }
+
+    /**
+     * Get all of the events on the schedule which run on any of the provided environments.
+     *
+     * @param  list<string>  $environments
+     * @return \Illuminate\Console\Scheduling\Event[]
+     */
+    public function eventsForEnvironments(array $environments): array
+    {
+        return array_values(array_filter(
+            $this->events(),
+            static fn (Event $event) => array_any($environments, $event->runsInEnvironment(...))
+        ));
     }
 
     /**
      * Specify the cache store that should be used to store mutexes.
      *
-     * @param  string  $store
+     * @param  \UnitEnum|string  $store
      * @return $this
      */
     public function useCache($store)
     {
+        $store = enum_value($store);
+
         if ($this->eventMutex instanceof CacheAware) {
             $this->eventMutex->useStore($store);
         }
@@ -352,11 +513,80 @@ class Schedule
             } catch (BindingResolutionException $e) {
                 throw new RuntimeException(
                     'Unable to resolve the dispatcher from the service container. Please bind it or install the illuminate/bus package.',
-                    $e->getCode(), $e
+                    is_int($e->getCode()) ? $e->getCode() : 0, $e
                 );
             }
         }
 
         return $this->dispatcher;
+    }
+
+    /**
+     * Indicate that the scheduler should not poll for pause or interrupt signals.
+     *
+     * This prevents the scheduler from hitting the application cache to determine if it needs to pause or interrupt.
+     *
+     * @return void
+     */
+    public static function withoutInterruptionPolling()
+    {
+        static::$pausable = false;
+        static::$interruptible = false;
+    }
+
+    /**
+     * Determine if the schedule has been interrupted since the given time.
+     *
+     * @param  \DateTimeInterface  $time
+     * @return bool
+     */
+    public function hasBeenInterruptedSince(DateTimeInterface $time)
+    {
+        if (! static::$interruptible) {
+            return false;
+        }
+
+        $interruptedAt = Container::getInstance()->make(Cache::class)->get('illuminate:schedule:interrupt');
+
+        return is_numeric($interruptedAt) && (int) $interruptedAt >= Date::instance($time)->getTimestampMs();
+    }
+
+    /**
+     * Indicate that every event on the schedule should only run on one server for each cron expression.
+     *
+     * @param  bool  $value
+     * @return void
+     */
+    public static function alwaysOnOneServer($value = true)
+    {
+        static::$alwaysOnOneServer = $value;
+    }
+
+    /**
+     * Dynamically handle calls into the schedule instance.
+     *
+     * @param  string  $method
+     * @param  array  $parameters
+     * @return mixed
+     *
+     * @throws \BadMethodCallException
+     */
+    public function __call($method, $parameters)
+    {
+        if (static::hasMacro($method)) {
+            return $this->macroCall($method, $parameters);
+        }
+
+        if (method_exists(PendingEventAttributes::class, $method)
+            || in_array($method, PendingEventAttributes::DEFERRED_EVENT_METHODS, true)
+            || Event::hasMacro($method)) {
+            $this->attributes ??= $this->groupStack ? clone array_last($this->groupStack) : new PendingEventAttributes($this);
+
+            return $this->attributes->$method(...$parameters);
+        }
+
+        throw new BadMethodCallException(sprintf(
+            'Method %s::%s does not exist.', static::class, $method
+        ));
     }
 }

@@ -2,9 +2,13 @@
 
 namespace Illuminate\View;
 
+use BackedEnum;
 use Illuminate\Container\Container;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\View\Compilers\ComponentTagCompiler;
+
+use function Illuminate\Support\enum_value;
 
 class DynamicComponent extends Component
 {
@@ -18,7 +22,7 @@ class DynamicComponent extends Component
     /**
      * The component tag compiler instance.
      *
-     * @var \Illuminate\View\Compilers\BladeTagCompiler
+     * @var \Illuminate\View\Compilers\ComponentTagCompiler
      */
     protected static $compiler;
 
@@ -32,12 +36,11 @@ class DynamicComponent extends Component
     /**
      * Create a new component instance.
      *
-     * @param  string  $component
-     * @return void
+     * @param  \BackedEnum|string  $component
      */
-    public function __construct(string $component)
+    public function __construct(BackedEnum|string $component)
     {
-        $this->component = $component;
+        $this->component = (string) enum_value($component);
     }
 
     /**
@@ -48,7 +51,7 @@ class DynamicComponent extends Component
     public function render()
     {
         $template = <<<'EOF'
-<?php extract(collect($attributes->getAttributes())->mapWithKeys(function ($value, $key) { return [Illuminate\Support\Str::camel(str_replace([':', '.'], ' ', $key)) => $value]; })->all(), EXTR_SKIP); ?>
+<?php extract((new \Illuminate\Support\Collection($attributes->getAttributes()))->mapWithKeys(function ($value, $key) { return [Illuminate\Support\Str::camel(str_replace([':', '.'], ' ', $key)) => $value]; })->all(), EXTR_SKIP); ?>
 {{ props }}
 <x-{{ component }} {{ bindings }} {{ attributes }}>
 {{ slots }}
@@ -93,7 +96,7 @@ EOF;
             return '';
         }
 
-        return '@props('.'[\''.implode('\',\'', collect($bindings)->map(function ($dataKey) {
+        return '@props('.'[\''.implode('\',\'', (new Collection($bindings))->map(function ($dataKey) {
             return Str::camel($dataKey);
         })->all()).'\']'.')';
     }
@@ -106,9 +109,9 @@ EOF;
      */
     protected function compileBindings(array $bindings)
     {
-        return collect($bindings)->map(function ($key) {
-            return ':'.$key.'="$'.Str::camel(str_replace([':', '.'], ' ', $key)).'"';
-        })->implode(' ');
+        return (new Collection($bindings))
+            ->map(fn ($key) => ':'.$key.'="$'.Str::camel(str_replace([':', '.'], ' ', $key)).'"')
+            ->implode(' ');
     }
 
     /**
@@ -119,9 +122,10 @@ EOF;
      */
     protected function compileSlots(array $slots)
     {
-        return collect($slots)->map(function ($slot, $name) {
-            return $name === '__default' ? null : '<x-slot name="'.$name.'" '.((string) $slot->attributes).'>{{ $'.$name.' }}</x-slot>';
-        })->filter()->implode(PHP_EOL);
+        return (new Collection($slots))
+            ->reject(fn ($slot, $name) => $name === '__default')
+            ->map(fn ($slot, $name) => '<x-slot name="'.$name.'" :attributes="$'.$name.'->attributes">{{ $'.$name.' }}</x-slot>')
+            ->implode(PHP_EOL);
     }
 
     /**
@@ -131,11 +135,7 @@ EOF;
      */
     protected function classForComponent()
     {
-        if (isset(static::$componentClasses[$this->component])) {
-            return static::$componentClasses[$this->component];
-        }
-
-        return static::$componentClasses[$this->component] =
+        return static::$componentClasses[$this->component] ?? static::$componentClasses[$this->component] =
                     $this->compiler()->componentClass($this->component);
     }
 
@@ -147,7 +147,7 @@ EOF;
      */
     protected function bindings(string $class)
     {
-        [$data, $attributes] = $this->compiler()->partitionDataAndAttributes($class, $this->attributes->getAttributes());
+        [$data] = $this->compiler()->partitionDataAndAttributes($class, $this->attributes->getAttributes());
 
         return array_keys($data->all());
     }

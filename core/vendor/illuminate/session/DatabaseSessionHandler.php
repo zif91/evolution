@@ -9,6 +9,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\InteractsWithTime;
+use RuntimeException;
 use SessionHandlerInterface;
 
 class DatabaseSessionHandler implements ExistenceAwareInterface, SessionHandlerInterface
@@ -39,7 +40,7 @@ class DatabaseSessionHandler implements ExistenceAwareInterface, SessionHandlerI
     /**
      * The container instance.
      *
-     * @var \Illuminate\Contracts\Container\Container
+     * @var \Illuminate\Contracts\Container\Container|null
      */
     protected $container;
 
@@ -57,9 +58,8 @@ class DatabaseSessionHandler implements ExistenceAwareInterface, SessionHandlerI
      * @param  string  $table
      * @param  int  $minutes
      * @param  \Illuminate\Contracts\Container\Container|null  $container
-     * @return void
      */
-    public function __construct(ConnectionInterface $connection, $table, $minutes, Container $container = null)
+    public function __construct(ConnectionInterface $connection, $table, $minutes, ?Container $container = null)
     {
         $this->table = $table;
         $this->minutes = $minutes;
@@ -72,8 +72,7 @@ class DatabaseSessionHandler implements ExistenceAwareInterface, SessionHandlerI
      *
      * @return bool
      */
-    #[\ReturnTypeWillChange]
-    public function open($savePath, $sessionName)
+    public function open($savePath, $sessionName): bool
     {
         return true;
     }
@@ -83,8 +82,7 @@ class DatabaseSessionHandler implements ExistenceAwareInterface, SessionHandlerI
      *
      * @return bool
      */
-    #[\ReturnTypeWillChange]
-    public function close()
+    public function close(): bool
     {
         return true;
     }
@@ -92,10 +90,29 @@ class DatabaseSessionHandler implements ExistenceAwareInterface, SessionHandlerI
     /**
      * {@inheritdoc}
      *
+     * @return string
+     */
+    public function create_sid(): string
+    {
+        return session_create_id() ?: throw new RuntimeException('Unable to create a session ID.');
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return bool
+     */
+    public function validateId($id): bool
+    {
+        return ! is_null($this->getQuery()->find($id));
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @return string|false
      */
-    #[\ReturnTypeWillChange]
-    public function read($sessionId)
+    public function read($sessionId): string|false
     {
         $session = (object) $this->getQuery()->find($sessionId);
 
@@ -131,8 +148,7 @@ class DatabaseSessionHandler implements ExistenceAwareInterface, SessionHandlerI
      *
      * @return bool
      */
-    #[\ReturnTypeWillChange]
-    public function write($sessionId, $data)
+    public function write($sessionId, $data): bool
     {
         $payload = $this->getDefaultPayload($data);
 
@@ -160,7 +176,7 @@ class DatabaseSessionHandler implements ExistenceAwareInterface, SessionHandlerI
     {
         try {
             return $this->getQuery()->insert(Arr::set($payload, 'id', $sessionId));
-        } catch (QueryException $e) {
+        } catch (QueryException) {
             $this->performUpdate($sessionId, $payload);
         }
     }
@@ -196,7 +212,7 @@ class DatabaseSessionHandler implements ExistenceAwareInterface, SessionHandlerI
 
         return tap($payload, function (&$payload) {
             $this->addUserInformation($payload)
-                 ->addRequestInformation($payload);
+                ->addRequestInformation($payload);
         });
     }
 
@@ -246,7 +262,7 @@ class DatabaseSessionHandler implements ExistenceAwareInterface, SessionHandlerI
     /**
      * Get the IP address for the current request.
      *
-     * @return string
+     * @return string|null
      */
     protected function ipAddress()
     {
@@ -260,7 +276,7 @@ class DatabaseSessionHandler implements ExistenceAwareInterface, SessionHandlerI
      */
     protected function userAgent()
     {
-        return substr((string) $this->container->make('request')->header('User-Agent'), 0, 500);
+        return mb_substr(mb_convert_encoding((string) $this->container->make('request')->header('User-Agent'), 'UTF-8'), 0, 500);
     }
 
     /**
@@ -268,8 +284,7 @@ class DatabaseSessionHandler implements ExistenceAwareInterface, SessionHandlerI
      *
      * @return bool
      */
-    #[\ReturnTypeWillChange]
-    public function destroy($sessionId)
+    public function destroy($sessionId): bool
     {
         $this->getQuery()->where('id', $sessionId)->delete();
 
@@ -279,12 +294,11 @@ class DatabaseSessionHandler implements ExistenceAwareInterface, SessionHandlerI
     /**
      * {@inheritdoc}
      *
-     * @return int|false
+     * @return int
      */
-    #[\ReturnTypeWillChange]
-    public function gc($lifetime)
+    public function gc($lifetime): int
     {
-        $this->getQuery()->where('last_activity', '<=', $this->currentTime() - $lifetime)->delete();
+        return $this->getQuery()->where('last_activity', '<=', $this->currentTime() - $lifetime)->delete();
     }
 
     /**
@@ -294,7 +308,7 @@ class DatabaseSessionHandler implements ExistenceAwareInterface, SessionHandlerI
      */
     protected function getQuery()
     {
-        return $this->connection->table($this->table);
+        return $this->connection->table($this->table)->useWritePdo();
     }
 
     /**

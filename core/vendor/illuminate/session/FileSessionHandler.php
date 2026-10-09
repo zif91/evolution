@@ -4,6 +4,7 @@ namespace Illuminate\Session;
 
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Carbon;
+use RuntimeException;
 use SessionHandlerInterface;
 use Symfony\Component\Finder\Finder;
 
@@ -36,7 +37,6 @@ class FileSessionHandler implements SessionHandlerInterface
      * @param  \Illuminate\Filesystem\Filesystem  $files
      * @param  string  $path
      * @param  int  $minutes
-     * @return void
      */
     public function __construct(Filesystem $files, $path, $minutes)
     {
@@ -50,8 +50,7 @@ class FileSessionHandler implements SessionHandlerInterface
      *
      * @return bool
      */
-    #[\ReturnTypeWillChange]
-    public function open($savePath, $sessionName)
+    public function open($savePath, $sessionName): bool
     {
         return true;
     }
@@ -61,8 +60,7 @@ class FileSessionHandler implements SessionHandlerInterface
      *
      * @return bool
      */
-    #[\ReturnTypeWillChange]
-    public function close()
+    public function close(): bool
     {
         return true;
     }
@@ -70,15 +68,33 @@ class FileSessionHandler implements SessionHandlerInterface
     /**
      * {@inheritdoc}
      *
+     * @return string
+     */
+    public function create_sid(): string
+    {
+        return session_create_id() ?: throw new RuntimeException('Unable to create a session ID.');
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return bool
+     */
+    public function validateId($id): bool
+    {
+        return $this->files->isFile($this->path.'/'.$id);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @return string|false
      */
-    #[\ReturnTypeWillChange]
-    public function read($sessionId)
+    public function read($sessionId): string|false
     {
-        if ($this->files->isFile($path = $this->path.'/'.$sessionId)) {
-            if ($this->files->lastModified($path) >= Carbon::now()->subMinutes($this->minutes)->getTimestamp()) {
-                return $this->files->sharedGet($path);
-            }
+        if ($this->files->isFile($path = $this->path.'/'.$sessionId) &&
+            $this->files->lastModified($path) >= Carbon::now()->subMinutes($this->minutes)->getTimestamp()) {
+            return $this->files->sharedGet($path);
         }
 
         return '';
@@ -89,8 +105,7 @@ class FileSessionHandler implements SessionHandlerInterface
      *
      * @return bool
      */
-    #[\ReturnTypeWillChange]
-    public function write($sessionId, $data)
+    public function write($sessionId, $data): bool
     {
         $this->files->put($this->path.'/'.$sessionId, $data, true);
 
@@ -102,8 +117,7 @@ class FileSessionHandler implements SessionHandlerInterface
      *
      * @return bool
      */
-    #[\ReturnTypeWillChange]
-    public function destroy($sessionId)
+    public function destroy($sessionId): bool
     {
         $this->files->delete($this->path.'/'.$sessionId);
 
@@ -113,19 +127,23 @@ class FileSessionHandler implements SessionHandlerInterface
     /**
      * {@inheritdoc}
      *
-     * @return int|false
+     * @return int
      */
-    #[\ReturnTypeWillChange]
-    public function gc($lifetime)
+    public function gc($lifetime): int
     {
         $files = Finder::create()
-                    ->in($this->path)
-                    ->files()
-                    ->ignoreDotFiles(true)
-                    ->date('<= now - '.$lifetime.' seconds');
+            ->in($this->path)
+            ->files()
+            ->ignoreDotFiles(true)
+            ->date('<= now - '.$lifetime.' seconds');
+
+        $deletedSessions = 0;
 
         foreach ($files as $file) {
             $this->files->delete($file->getRealPath());
+            $deletedSessions++;
         }
+
+        return $deletedSessions;
     }
 }

@@ -6,13 +6,13 @@ use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Contracts\Routing\ResponseFactory as ResponseFactoryContract;
 use Illuminate\Contracts\Routing\UrlGenerator as UrlGeneratorContract;
 use Illuminate\Contracts\View\Factory as ViewFactoryContract;
+use Illuminate\Routing\Contracts\CallableDispatcher as CallableDispatcherContract;
 use Illuminate\Routing\Contracts\ControllerDispatcher as ControllerDispatcherContract;
 use Illuminate\Support\ServiceProvider;
-use Nyholm\Psr7\Factory\Psr17Factory;
-use Nyholm\Psr7\Response as PsrResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory;
+use Symfony\Component\HttpFoundation\Response;
 
 class RoutingServiceProvider extends ServiceProvider
 {
@@ -29,6 +29,7 @@ class RoutingServiceProvider extends ServiceProvider
         $this->registerPsrRequest();
         $this->registerPsrResponse();
         $this->registerResponseFactory();
+        $this->registerCallableDispatcher();
         $this->registerControllerDispatcher();
     }
 
@@ -75,7 +76,9 @@ class RoutingServiceProvider extends ServiceProvider
             });
 
             $url->setKeyResolver(function () {
-                return $this->app->make('config')->get('app.key');
+                $config = $this->app->make('config');
+
+                return [$config->get('app.key'), ...($config->get('app.previous_keys') ?? [])];
             });
 
             // If the route collection is "rebound", for example, when the routes stay
@@ -132,14 +135,20 @@ class RoutingServiceProvider extends ServiceProvider
     protected function registerPsrRequest()
     {
         $this->app->bind(ServerRequestInterface::class, function ($app) {
-            if (class_exists(Psr17Factory::class) && class_exists(PsrHttpFactory::class)) {
-                $psr17Factory = new Psr17Factory;
+            if (class_exists(PsrHttpFactory::class)) {
+                $illuminateRequest = $app->make('request');
+                $request = (new PsrHttpFactory)->createRequest($illuminateRequest);
 
-                return (new PsrHttpFactory($psr17Factory, $psr17Factory, $psr17Factory, $psr17Factory))
-                    ->createRequest($app->make('request'));
+                if ($illuminateRequest->getContentTypeFormat() !== 'json' && $illuminateRequest->request->count() === 0) {
+                    return $request;
+                }
+
+                return $request->withParsedBody(
+                    array_merge($request->getParsedBody() ?? [], $illuminateRequest->getPayload()->all())
+                );
             }
 
-            throw new BindingResolutionException('Unable to resolve PSR request. Please install the symfony/psr-http-message-bridge and nyholm/psr7 packages.');
+            throw new BindingResolutionException('Unable to resolve PSR request. Please install the "symfony/psr-http-message-bridge" package.');
         });
     }
 
@@ -153,11 +162,11 @@ class RoutingServiceProvider extends ServiceProvider
     protected function registerPsrResponse()
     {
         $this->app->bind(ResponseInterface::class, function () {
-            if (class_exists(PsrResponse::class)) {
-                return new PsrResponse;
+            if (class_exists(PsrHttpFactory::class)) {
+                return (new PsrHttpFactory)->createResponse(new Response);
             }
 
-            throw new BindingResolutionException('Unable to resolve PSR response. Please install the nyholm/psr7 package.');
+            throw new BindingResolutionException('Unable to resolve PSR response. Please install the "symfony/psr-http-message-bridge" package.');
         });
     }
 
@@ -170,6 +179,18 @@ class RoutingServiceProvider extends ServiceProvider
     {
         $this->app->singleton(ResponseFactoryContract::class, function ($app) {
             return new ResponseFactory($app[ViewFactoryContract::class], $app['redirect']);
+        });
+    }
+
+    /**
+     * Register the callable dispatcher.
+     *
+     * @return void
+     */
+    protected function registerCallableDispatcher()
+    {
+        $this->app->singleton(CallableDispatcherContract::class, function ($app) {
+            return new CallableDispatcher($app);
         });
     }
 

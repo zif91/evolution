@@ -5,10 +5,15 @@ namespace Illuminate\Redis\Connections;
 use Closure;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Redis\Events\CommandExecuted;
+use Illuminate\Redis\Events\CommandFailed;
 use Illuminate\Redis\Limiters\ConcurrencyLimiterBuilder;
 use Illuminate\Redis\Limiters\DurationLimiterBuilder;
 use Illuminate\Support\Traits\Macroable;
+use Throwable;
 
+/**
+ * @mixin \Redis
+ */
 abstract class Connection
 {
     use Macroable {
@@ -32,7 +37,7 @@ abstract class Connection
     /**
      * The event dispatcher instance.
      *
-     * @var \Illuminate\Contracts\Events\Dispatcher
+     * @var \Illuminate\Contracts\Events\Dispatcher|null
      */
     protected $events;
 
@@ -87,7 +92,7 @@ abstract class Connection
      */
     public function subscribe($channels, Closure $callback)
     {
-        return $this->createSubscription($channels, $callback, __FUNCTION__);
+        $this->createSubscription($channels, $callback, __FUNCTION__);
     }
 
     /**
@@ -99,7 +104,7 @@ abstract class Connection
      */
     public function psubscribe($channels, Closure $callback)
     {
-        return $this->createSubscription($channels, $callback, __FUNCTION__);
+        $this->createSubscription($channels, $callback, __FUNCTION__);
     }
 
     /**
@@ -108,20 +113,41 @@ abstract class Connection
      * @param  string  $method
      * @param  array  $parameters
      * @return mixed
+     *
+     * @throws \Throwable
      */
     public function command($method, array $parameters = [])
     {
         $start = microtime(true);
 
-        $result = $this->client->{$method}(...$parameters);
+        try {
+            $result = $this->client->{$method}(...$parameters);
+        } catch (Throwable $e) {
+            $this->events?->dispatch(new CommandFailed(
+                $method, $this->parseParametersForEvent($parameters), $e, $this
+            ));
+
+            throw $e;
+        }
 
         $time = round((microtime(true) - $start) * 1000, 2);
 
-        if (isset($this->events)) {
-            $this->event(new CommandExecuted($method, $parameters, $time, $this));
-        }
+        $this->events?->dispatch(new CommandExecuted(
+            $method, $this->parseParametersForEvent($parameters), $time, $this
+        ));
 
         return $result;
+    }
+
+    /**
+     * Parse the command's parameters for event dispatching.
+     *
+     * @param  array  $parameters
+     * @return array
+     */
+    protected function parseParametersForEvent(array $parameters)
+    {
+        return $parameters;
     }
 
     /**
@@ -129,12 +155,12 @@ abstract class Connection
      *
      * @param  mixed  $event
      * @return void
+     *
+     * @deprecated since Laravel 11.x
      */
     protected function event($event)
     {
-        if (isset($this->events)) {
-            $this->events->dispatch($event);
-        }
+        $this->events?->dispatch($event);
     }
 
     /**
@@ -145,9 +171,28 @@ abstract class Connection
      */
     public function listen(Closure $callback)
     {
-        if (isset($this->events)) {
-            $this->events->listen(CommandExecuted::class, $callback);
-        }
+        $this->events?->listen(CommandExecuted::class, $callback);
+    }
+
+    /**
+     * Register a Redis command failure listener with the connection.
+     *
+     * @param  \Closure  $callback
+     * @return void
+     */
+    public function listenForFailures(Closure $callback)
+    {
+        $this->events?->listen(CommandFailed::class, $callback);
+    }
+
+    /**
+     * Determine if the connection is a cluster connection.
+     *
+     * @return bool
+     */
+    public function isCluster()
+    {
+        return false;
     }
 
     /**
@@ -161,7 +206,7 @@ abstract class Connection
     }
 
     /**
-     * Set the connections name.
+     * Set the connection's name.
      *
      * @param  string  $name
      * @return $this
@@ -176,7 +221,7 @@ abstract class Connection
     /**
      * Get the event dispatcher used by the connection.
      *
-     * @return \Illuminate\Contracts\Events\Dispatcher
+     * @return \Illuminate\Contracts\Events\Dispatcher|null
      */
     public function getEventDispatcher()
     {
@@ -202,6 +247,25 @@ abstract class Connection
     public function unsetEventDispatcher()
     {
         $this->events = null;
+    }
+
+    /**
+     * Determine if the given key contains a Redis Cluster hash tag.
+     *
+     * @param  string  $key
+     * @return bool
+     */
+    public static function hasHashTag(string $key): bool
+    {
+        $open = strpos($key, '{');
+
+        if ($open === false) {
+            return false;
+        }
+
+        $close = strpos($key, '}', $open + 1);
+
+        return $close !== false && $close - $open > 1;
     }
 
     /**

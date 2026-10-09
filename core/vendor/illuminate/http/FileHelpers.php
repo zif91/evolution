@@ -9,12 +9,12 @@ trait FileHelpers
     /**
      * The cache copy of the file's hash name.
      *
-     * @var string
+     * @var string|null
      */
     protected $hashName = null;
 
     /**
-     * Get the fully qualified path to the file.
+     * Get the fully-qualified path to the file.
      *
      * @return string
      */
@@ -26,7 +26,7 @@ trait FileHelpers
     /**
      * Get the file's extension.
      *
-     * @return string
+     * @return string|null
      */
     public function extension()
     {
@@ -52,5 +52,15 @@ trait FileHelpers
         }
 
         return $path.$hash.$extension;
+    }
+
+    /**
+     * Get the dimensions of the image (if applicable).
+     *
+     * @return array|null
+     */
+    public function dimensions()
+    {
+        return @getimagesize($this->getRealPath());
     }
 }
