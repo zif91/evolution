@@ -85,3 +85,28 @@ Desktop.ini
 .vscode/
 
 .htaccess
+
+# Local upgrade laboratory
+/.local/
+/core/config/database/connections/default.php
+/core/custom/.env
+/reports/*.log
+/.playwright-mcp/
+/core/storage/updater/
+# Downloaded test extras (pinned by tools/setup-local.py)
+/assets/lib/
+/assets/snippets/DocLister/
+/assets/snippets/FormLister/
+/assets/snippets/summary/
+/assets/js/easy-ui/
+/assets/js/euigrid/
+/assets/js/euiuploader/
+/assets/js/fileapi/
+/assets/js/handlebars/
+/assets/js/jquery/
+/assets/js/sortable/
+
+# Generated local evidence; keep the reviewed verification summary only.
+/reports/*
+!/reports/VERIFICATION.md
+**/__pycache__/
