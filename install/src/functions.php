@@ -786,7 +786,11 @@ function installerSiteUrl(array $server): string
 {
     $scheme = (!empty($server['HTTPS']) && strcasecmp($server['HTTPS'], 'off') !== 0)
         || ($server['REQUEST_SCHEME'] ?? '') === 'https' ? 'https' : 'http';
-    $baseUrlPath = rtrim(dirname(dirname($server['SCRIPT_NAME'])), '/.') . '/';
+    // dirname() returns a backslash for the root on Windows. URI paths must
+    // use forward slashes both before and after filesystem path handling.
+    $scriptName = str_replace('\\', '/', $server['SCRIPT_NAME']);
+    $baseUrlPath = str_replace('\\', '/', dirname(dirname($scriptName)));
+    $baseUrlPath = rtrim($baseUrlPath, '/.') . '/';
 
     return $scheme . '://' . $server['HTTP_HOST'] . $baseUrlPath;
 }
