@@ -1,0 +1,25 @@
+From f342aeabb22b67659d9b44ed37ba31309384da34 Mon Sep 17 00:00:00 2001
+From: zif91 <zif91@users.noreply.github.com>
+Date: Fri, 9 Oct 2026 21:31:07 +0300
+Subject: [PATCH] fix(compiler): reset variables for each compilation
+
+---
+ assets/plugins/lesscompiler/src/LessCompiler.php | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/assets/plugins/lesscompiler/src/LessCompiler.php b/assets/plugins/lesscompiler/src/LessCompiler.php
+index 10d3b6f..3628297 100644
+--- a/assets/plugins/lesscompiler/src/LessCompiler.php
++++ b/assets/plugins/lesscompiler/src/LessCompiler.php
+@@ -97,6 +97,8 @@ class LessCompiler
+ 
+     public function makeCSS() {
+         $shouldCompile = false;
++        // Variables belong to this compilation, not to earlier calls.
++        $this->prependedStyles = '';
+ 
+         $sources = glob(MODX_BASE_PATH . $this->cssPath . '*.less');
+ 
+-- 
+2.23.0
+

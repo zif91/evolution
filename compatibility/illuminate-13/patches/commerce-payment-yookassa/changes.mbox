@@ -1,0 +1,65 @@
+From 3850f774635ec719cfea5f43da7ad31fdf7df31a Mon Sep 17 00:00:00 2001
+From: zif91 <zif91@users.noreply.github.com>
+Date: Fri, 9 Oct 2026 21:31:14 +0300
+Subject: [PATCH] Convert YooKassa payment and receipt amounts to RUB
+
+---
+ .../src/Payments/YandexkassaPayment.php       | 21 +++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
+
+diff --git a/assets/plugins/commerce/src/Payments/YandexkassaPayment.php b/assets/plugins/commerce/src/Payments/YandexkassaPayment.php
+index 6abea66..925b4d8 100644
+--- a/assets/plugins/commerce/src/Payments/YandexkassaPayment.php
++++ b/assets/plugins/commerce/src/Payments/YandexkassaPayment.php
+@@ -43,11 +43,14 @@ class YandexkassaPayment extends Payment implements \Commerce\Interfaces\Payment
+         $currency = ci()->currency->getCurrency($order['currency']);
+         $payment = $this->createPayment($order['id'],
+             ci()->currency->convertToDefault($order['amount'], $currency['code']));
++        // Commerce records payment amounts in its default currency. YooKassa
++        // receives RUB amounts, including every receipt line.
++        $paymentAmount = ci()->currency->convertFromDefault($payment['amount'], 'RUB');
+         $cart = $processor->getCart();
+ 
+         $data = [
+             'amount'       => [
+-                'value'    => number_format($payment['amount'], 2, '.', ''),
++                'value'    => number_format($paymentAmount, 2, '.', ''),
+                 'currency' => 'RUB',
+             ],
+             'description'  => ci()->tpl->parseChunk($this->lang['payments.payment_description'], [
+@@ -72,12 +75,13 @@ class YandexkassaPayment extends Payment implements \Commerce\Interfaces\Payment
+                 'customer' => [],
+             ];
+ 
+-            $items = $this->prepareItems($cart);
++            $items = $this->prepareItems($cart, $currency['code'], 'RUB');
+ 
+-            $isPartialPayment = $payment['amount'] < $order['amount'];
++            $orderAmount = ci()->currency->convert($order['amount'], $currency['code'], 'RUB');
++            $isPartialPayment = $paymentAmount < $orderAmount;
+ 
+             if ($isPartialPayment) {
+-                $items = $this->decreaseItemsAmount($items, $order['amount'], $payment['amount']);
++                $items = $this->decreaseItemsAmount($items, $orderAmount, $paymentAmount);
+             }
+ 
+             foreach ($items as $item) {
+@@ -165,8 +169,13 @@ class YandexkassaPayment extends Payment implements \Commerce\Interfaces\Payment
+             {
+                 if ($payment['paid'] === true) {
+                     try {
+-                        $processor->processPayment($payment['metadata']['payment_id'],
+-                            floatval($payment['amount']['value']));
++                        $commercePayment = $processor->loadPayment($payment['metadata']['payment_id']);
++                        if (empty($commercePayment)) {
++                            throw new Exception('Payment not found');
++                        }
++                        // Use the original default-currency amount, which also
++                        // remains correct if exchange rates change after checkout.
++                        $processor->processPayment($commercePayment, $commercePayment['amount']);
+                         // $this->modx->invokeEvent('OnPageNotFound', ['callback' => &$payment]); // если необходимо обработать возвращаемые данные, н-р, отправить API-запрос в CRM
+                     } catch (Exception $e) {
+                         if ($this->debug) {
+-- 
+2.23.0
+

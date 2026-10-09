@@ -1,0 +1,35 @@
+{
+  "scope": "Own localhost functional tests; security excluded",
+  "runtime": [
+    "PHP8.3.35",
+    "PHP8.4.26",
+    "MySQL8.4.11"
+  ],
+  "coreCommit": "263696b64766d9198df3b1f251766563345108ca",
+  "corePerPHP": {
+    "functional": 63,
+    "migrationRegression": 8
+  },
+  "contentPerPHP": {
+    "productPASS": 41,
+    "productFAIL": 0
+  },
+  "commerce": {
+    "mainPASS": 44,
+    "currencyPASS": 8,
+    "warningStatePASS": 4
+  },
+  "combined": {
+    "PASS": 44,
+    "FAIL": 0,
+    "sourceIntegrity": 98
+  },
+  "boundaries": [
+    "Sequential repeated callbacks tested; concurrent callbacks/live provider delivery not tested.",
+    "Legacy migration baseline checks pinned hashes and table/column/index presence, not arbitrary manually altered column types.",
+    "Directory extra #29 retains exact observed tree trace; independent before German locale control did not reproduce.",
+    "Combined CBR transport fixture responds503 locally; source retains production URL.",
+    "Legacy ClientSettings v2.2.0 backport is separate from the already-fixed HEAD used in combined.",
+    "Rate change between foreign-currency checkout and callback remains an unverified coverage gap."
+  ]
+}

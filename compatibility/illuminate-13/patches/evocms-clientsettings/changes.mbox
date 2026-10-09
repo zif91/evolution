@@ -1,0 +1,24 @@
+From bb44e06e70f8358ad39fee1331650c2f12322860 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Fri, 9 Oct 2026 21:24:36 +0300
+Subject: [PATCH] Include the standard token in the native settings form
+
+---
+ views/layout.blade.php | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/views/layout.blade.php b/views/layout.blade.php
+index 4ccad2a..6a06598 100644
+--- a/views/layout.blade.php
++++ b/views/layout.blade.php
+@@ -6,6 +6,7 @@
+ </h1>
+ 
+ <form name="settings" method="post" id="mutate">
++        @csrf
+     @yield('buttons')
+ 
+     <div class="sectionBody" id="settingsPane">
+-- 
+2.23.0
+

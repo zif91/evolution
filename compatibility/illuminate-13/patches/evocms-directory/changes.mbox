@@ -1,0 +1,57 @@
+From 7a384e2e7134c2367af1d8c9fa03eb8c3efbc851 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Fri, 9 Oct 2026 21:24:37 +0300
+Subject: [PATCH 1/2] Submit the form token when changing the page size
+
+---
+ views/list.blade.php | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/views/list.blade.php b/views/list.blade.php
+index 62122e2..c043aec 100644
+--- a/views/list.blade.php
++++ b/views/list.blade.php
+@@ -302,7 +302,7 @@
+                 });
+ 
+                 $('.limits select').on('change', function() {
+-                    $.post("{{ route('directory::limit', $container->id) }}", {limit: $(this).val()}, function(response) {
++                    $.post("{{ route('directory::limit', $container->id) }}", {limit: $(this).val(), _token: $(this.form).find('[name="_token"]').val()}, function(response) {
+                         location.reload();
+                     });
+                 });
+-- 
+2.23.0
+
+
+From f5156896b25b25e58bf4507520f443ec6a5ebb00 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Fri, 9 Oct 2026 21:50:21 +0300
+Subject: [PATCH 2/2] Use English labels when tree AJAX locale has no Directory
+ translation
+
+---
+ src/Directory.php | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/src/Directory.php b/src/Directory.php
+index ed93d75..da8c255 100644
+--- a/src/Directory.php
++++ b/src/Directory.php
+@@ -42,7 +42,12 @@ class Directory
+             $config['columns'] = array_merge($default['columns'], $config['columns'] ?? []);
+             $config['tree_config'] = array_merge($default['tree_config'], $config['tree_config'] ?? []);
+             $config = array_merge($default, $config);
+-            $config['lang'] = array_merge(__('directory::messages'), $config['lang']);
++            $messages = __('directory::messages');
++            if (!is_array($messages)) {
++                // Tree AJAX can run with a locale that has no module translation.
++                $messages = __('directory::messages', [], 'en');
++            }
++            $config['lang'] = array_merge(is_array($messages) ? $messages : [], $config['lang']);
+ 
+             $sort = 0;
+             $config['columns'] = array_map(function($column) use (&$sort) {
+-- 
+2.23.0
+

@@ -1,0 +1,209 @@
+From 8faec8124b90837e1a5fe7d47b34d32b2be764da Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Fri, 9 Oct 2026 21:24:36 +0300
+Subject: [PATCH 1/3] Validate complete block imports before changing the
+ editor
+
+---
+ assets/plugins/pagebuilder/js/interaction.js  | 64 ++++++++++++++++++-
+ assets/plugins/pagebuilder/lang/english.php   |  1 +
+ .../plugins/pagebuilder/lang/russian-UTF8.php |  1 +
+ 3 files changed, 65 insertions(+), 1 deletion(-)
+
+diff --git a/assets/plugins/pagebuilder/js/interaction.js b/assets/plugins/pagebuilder/js/interaction.js
+index 786cb29..43de1c4 100644
+--- a/assets/plugins/pagebuilder/js/interaction.js
++++ b/assets/plugins/pagebuilder/js/interaction.js
+@@ -118,6 +118,62 @@
+                     });
+                 },
+ 
++                validateImportValues: function(conf, values) {
++                    if (!$.isPlainObject(values)) {
++                        return false;
++                    }
++
++                    for (var field in conf) {
++                        if (!Object.prototype.hasOwnProperty.call(values, field)) {
++                            continue; // Older exports may omit fields added to a configuration later.
++                        }
++
++                        var value = values[field], type = conf[field].type;
++
++                        if (type === 'group') {
++                            if (!Array.isArray(value)) {
++                                return false;
++                            }
++                            for (var i = 0; i < value.length; i++) {
++                                if (!ContentBlock.validateImportValues(conf[field].fields, value[i])) {
++                                    return false;
++                                }
++                            }
++                        } else if (type === 'checkbox' || type === 'imagecheckbox') {
++                            if (value !== null && typeof value === 'object') {
++                                if (!Array.isArray(value) && !$.isPlainObject(value)) {
++                                    return false;
++                                }
++                                for (var key in value) {
++                                    if (value[key] !== null && typeof value[key] === 'object') {
++                                        return false;
++                                    }
++                                }
++                            }
++                        } else if (value !== null && typeof value === 'object') {
++                            return false;
++                        }
++                    }
++
++                    return true;
++                },
++
++                validateImport: function(blocks) {
++                    if (!Array.isArray(blocks)) {
++                        return false;
++                    }
++                    for (var i = 0; i < blocks.length; i++) {
++                        var block = blocks[i];
++                        if (!$.isPlainObject(block) || typeof block.config !== 'string' ||
++                            !Object.prototype.hasOwnProperty.call(opts.config, block.config) ||
++                            !ContentBlock.validateImportValues(opts.config[block.config].fields, block.values)) {
++                            return false;
++                        }
++                    }
++
++                    return true;
++                },
++
+                 fetch: function($block, oldValues) {
+                     if ($block.hasClass('block')) {
+                         $block = $block.children('.block-inner');
+@@ -711,7 +767,13 @@
+                                 try {
+                                     json = JSON.parse(e.target.result);
+                                 } catch(e) {
+-                                    alert('Error');
++                                    alert(opts.lang['Invalid import file'] || 'Invalid import file. Choose a PageBuilder export with valid block configurations and values. Existing blocks were not changed.');
++                                    return;
++                                }
++
++                                // Validate the entire file before appending any block or nested group.
++                                if (!ContentBlock.validateImport(json)) {
++                                    alert(opts.lang['Invalid import file'] || 'Invalid import file. Choose a PageBuilder export with valid block configurations and values. Existing blocks were not changed.');
+                                     return;
+                                 }
+ 
+diff --git a/assets/plugins/pagebuilder/lang/english.php b/assets/plugins/pagebuilder/lang/english.php
+index 856b8e1..19b3212 100644
+--- a/assets/plugins/pagebuilder/lang/english.php
++++ b/assets/plugins/pagebuilder/lang/english.php
+@@ -18,6 +18,7 @@
+ 		'Show group items' => 'Show %s items',
+ 		'Hide group items' => 'Hide %s items',
+ 		'Export' => 'Export',
++		'Invalid import file' => 'Invalid import file. Choose a PageBuilder export with valid block configurations and values. Existing blocks were not changed.',
+ 		'Import' => 'Import',
+ 	];
+ 
+diff --git a/assets/plugins/pagebuilder/lang/russian-UTF8.php b/assets/plugins/pagebuilder/lang/russian-UTF8.php
+index 7df226f..15b5a81 100644
+--- a/assets/plugins/pagebuilder/lang/russian-UTF8.php
++++ b/assets/plugins/pagebuilder/lang/russian-UTF8.php
+@@ -18,6 +18,7 @@
+ 		'Show group items' => 'Показать (%s шт.)',
+ 		'Hide group items' => 'Скрыть (%s шт.)',
+ 		'Export' => 'Экспорт',
++		'Invalid import file' => 'Неверный файл импорта. Выберите экспорт PageBuilder с корректными блоками и значениями. Существующие блоки не изменены.',
+ 		'Import' => 'Импорт',
+ 	];
+ 
+-- 
+2.23.0
+
+
+From ecd2506aaef851afdd80a2001a355717fe867dfa Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Fri, 9 Oct 2026 21:31:06 +0300
+Subject: [PATCH 2/3] Preserve imported richtext in active and initializing
+ TinyMCE editors
+
+---
+ assets/plugins/pagebuilder/js/interaction.js | 28 ++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+
+diff --git a/assets/plugins/pagebuilder/js/interaction.js b/assets/plugins/pagebuilder/js/interaction.js
+index 43de1c4..a56bf7a 100644
+--- a/assets/plugins/pagebuilder/js/interaction.js
++++ b/assets/plugins/pagebuilder/js/interaction.js
+@@ -272,6 +272,21 @@
+                                 break;
+                             }
+ 
++                            case 'richtext': {
++                                if (typeof values[field] !== 'undefined' && typeof values[field] !== 'object') {
++                                    var $textarea = $field.children('textarea'),
++                                        editor = typeof tinymce !== 'undefined' && tinymce.editors[$textarea.attr('id')];
++
++                                    $textarea.val(values[field]).data('importValue', values[field]);
++                                    if (editor && editor.initialized) {
++                                        editor.setContent(values[field]);
++                                        $textarea.removeData('importValue');
++                                    }
++                                }
++
++                                break;
++                            }
++
+                             case 'imagecheckbox':
+                             case 'checkbox': {
+                                 if (typeof values[field] !== 'undefined') {
+@@ -584,6 +599,19 @@
+                         conf = $.extend({}, conf, options ? options : {});
+ 
+                         conf.selector = '#' + $textarea.attr('id');
++                        var setup = conf.setup;
++                        conf.setup = function(editor) {
++                            if (typeof setup === 'function') {
++                                setup(editor);
++                            }
++                            editor.on('init', function() {
++                                var value = $textarea.data('importValue');
++                                if (typeof value !== 'undefined') {
++                                    editor.setContent(value);
++                                    $textarea.removeData('importValue');
++                                }
++                            });
++                        };
+                         tinymce.init(conf);
+                     }
+                 },
+-- 
+2.23.0
+
+
+From 35541063ceee55e45ca9194eb4e3f5d3bc68b31f Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Fri, 9 Oct 2026 21:41:23 +0300
+Subject: [PATCH 3/3] Reject non-string richtext imports before editor mutation
+
+---
+ assets/plugins/pagebuilder/js/interaction.js | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/assets/plugins/pagebuilder/js/interaction.js b/assets/plugins/pagebuilder/js/interaction.js
+index a56bf7a..694de7b 100644
+--- a/assets/plugins/pagebuilder/js/interaction.js
++++ b/assets/plugins/pagebuilder/js/interaction.js
+@@ -139,6 +139,10 @@
+                                     return false;
+                                 }
+                             }
++                        } else if (type === 'richtext') {
++                            if (typeof value !== 'string') {
++                                return false; // Native exports always contain richtext strings.
++                            }
+                         } else if (type === 'checkbox' || type === 'imagecheckbox') {
+                             if (value !== null && typeof value === 'object') {
+                                 if (!Array.isArray(value) && !$.isPlainObject(value)) {
+-- 
+2.23.0
+

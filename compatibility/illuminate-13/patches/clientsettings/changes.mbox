@@ -1,0 +1,93 @@
+From 9b2e6aa74948f14e1a151ca57d2fce97b97354ee Mon Sep 17 00:00:00 2001
+From: Pathologic <m@xim.name>
+Date: Tue, 28 Nov 2023 02:22:37 +0300
+Subject: [PATCH 1/2] add csrf token
+
+(cherry picked from commit 2e8f69069e7f6018e9b9fd62d39fa3747b5c51eb)
+---
+ assets/modules/clientsettings/core/templates/header.tpl | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/assets/modules/clientsettings/core/templates/header.tpl b/assets/modules/clientsettings/core/templates/header.tpl
+index d2c5995..41609f1 100644
+--- a/assets/modules/clientsettings/core/templates/header.tpl
++++ b/assets/modules/clientsettings/core/templates/header.tpl
+@@ -3,6 +3,7 @@
+ </h1>
+ 
+ <form name="settings" method="post" id="mutate">
++    <?= csrf_field() ?>
+     <div id="actions">
+         <div class="btn-group">
+             <div class="btn-group dropdown">
+-- 
+2.23.0
+
+
+From 80d4221b6299a4c4713742a9453ddc5704d540f6 Mon Sep 17 00:00:00 2001
+From: Pathologic <m@xim.name>
+Date: Mon, 26 Aug 2024 15:44:47 +0300
+Subject: [PATCH 2/2] Update tabs.tpl
+
+(cherry picked from commit 3b78ff93e0a2d263d9af5eae0138e5851913d81b)
+---
+ .../clientsettings/core/templates/tabs.tpl    | 20 ++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/assets/modules/clientsettings/core/templates/tabs.tpl b/assets/modules/clientsettings/core/templates/tabs.tpl
+index dc12a0d..3ac9520 100644
+--- a/assets/modules/clientsettings/core/templates/tabs.tpl
++++ b/assets/modules/clientsettings/core/templates/tabs.tpl
+@@ -1,4 +1,4 @@
+-<style> 
++<style>
+ 	.clSettings .hr { display:flex; flex-wrap:nowrap; align-items: center; margin: 0 -0.25rem;}
+ 	.clSettings .hr:after {content:''; border-bottom: #ddd 1px solid; margin: 1rem 0; width:100%; }
+ 	.clSettings .col { display:flex; flex-basis: 100%; align-items: flex-start;}
+@@ -20,7 +20,20 @@
+ 	.clSettings .col[class*='col-xl-'] >.row > [class*='col-']{ max-width:100%; min-width:100%;}
+ 	.clSettings .col[class*='col-xl-'] .warning small {display: inline-flex;}
+ 	}
++    .image_for_field[data-image] { display: block; content: ""; width: 120px; height: 120px; margin: .1rem .1rem 0 0; border: 1px #ccc solid; background: #fff 50% 50% no-repeat; background-size: contain; cursor: pointer }
++    .image_for_field[data-image=""] { display: none }
+ </style>
++<script>
++    function evoRenderTvImageCheck (a) {
++        var b = document.getElementById('image_for_' + a.target.id),
++            c = new Image
++        a.target.value ? (c.src = (a.target.value.search(/^https?:\/\//i) < 0 ? "<?php echo evo()->getConfig('site_url')?>" : '') + a.target.value, c.onerror = function () {
++            b.style.backgroundImage = '', b.setAttribute('data-image', '')
++        }, c.onload = function () {
++            b.style.backgroundImage = 'url(\'' + this.src + '\')', b.setAttribute('data-image', this.src)
++        }) : (b.style.backgroundImage = '', b.setAttribute('data-image', ''))
++    }
++</script>
+ <?php foreach ($tabs as $name => $tab): ?>
+     <div class="tab-page clSettings" id="tab_<?= $name ?>">
+         <h2 class="tab"><?= $tab['caption'] ?></h2>
+@@ -49,7 +62,7 @@
+ 										<?= $options['caption'] ?>
+ 									</div>
+ 								<?php else: ?>
+-									<?= $options['caption'] ?> 
++									<?= $options['caption'] ?>
+ 									<small class="text-nowrap text-black-50 pt-1">[(<?= $params['prefix'] . $field ?>)]</small>
+ 								<?php endif; ?>
+ 							</div>
+@@ -129,7 +142,6 @@ if (is_readable($mmPath)) {
+ ?>
+ 
+ <?= $modx->manager->loadDatePicker($modx->getConfig('mgr_date_picker_path')) ?>
+-
+ <script>
+     jQuery('input.DatePicker').each(function() {
+         new DatePicker(this, {
+@@ -146,5 +158,3 @@ if (is_readable($mmPath)) {
+         document.settings.save.click();
+     }
+ </script>
+-
+-        
+-- 
+2.23.0
+

@@ -1,0 +1,62 @@
+From 75d2621a8fa045da828dbeaf87bcc5700f094d4d Mon Sep 17 00:00:00 2001
+From: zif91 <zif91@users.noreply.github.com>
+Date: Fri, 9 Oct 2026 21:31:07 +0300
+Subject: [PATCH] fix(manager): submit form tokens and report deletion failures
+
+---
+ .../core/templates/form_results.tpl           | 24 ++++++++++++-------
+ 1 file changed, 16 insertions(+), 8 deletions(-)
+
+diff --git a/assets/modules/formresults/core/templates/form_results.tpl b/assets/modules/formresults/core/templates/form_results.tpl
+index 38fe522..e814260 100644
+--- a/assets/modules/formresults/core/templates/form_results.tpl
++++ b/assets/modules/formresults/core/templates/form_results.tpl
+@@ -31,6 +31,16 @@
+ </div>
+ 
+ <script>
++    var formResultsToken = <?= json_encode(function_exists('csrf_token') ? csrf_token() : ($_SESSION['_token'] ?? ''), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
++    var finishFormResultsDelete = function(response) {
++        if (!response.ok) {
++            throw new Error('<?= addslashes($_lang['formresults.error'] ?? 'Unable to delete results') ?> (' + response.status + ')');
++        }
++        window.location.reload();
++    };
++    var reportFormResultsDeleteError = function(error) {
++        alert(error.message);
++    };
+     var removeResult = function(e, id) {
+         e.preventDefault();
+         e.stopPropagation();
+@@ -43,11 +53,10 @@
+         fetch('<?= $moduleUrl ?>&type=<?= $form['alias'] ?>&action=delete', {
+             method: 'POST',
+             body: new URLSearchParams({
+-                result_id: id
++                result_id: id,
++                _token: formResultsToken
+             })
+-        }).then(function(response) {
+-            window.location.reload();
+-        });
++        }).then(finishFormResultsDelete).catch(reportFormResultsDeleteError);
+     };
+ 
+     var removeResults = function(e) {
+@@ -58,10 +67,9 @@
+         }
+ 
+         fetch('<?= $moduleUrl ?>&type=<?= $form['alias'] ?>&action=deleteall', {
+-            method: 'POST'
+-        }).then(function(response) {
+-            window.location.reload();
+-        });
++            method: 'POST',
++            body: new URLSearchParams({_token: formResultsToken})
++        }).then(finishFormResultsDelete).catch(reportFormResultsDeleteError);
+     };
+ 
+     webix.ready(function(){
+-- 
+2.23.0
+

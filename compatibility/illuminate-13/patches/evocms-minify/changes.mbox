@@ -1,0 +1,27 @@
+From 2feafaa261d3b115a2c73b600009d3c5f0adde5e Mon Sep 17 00:00:00 2001
+From: zif91 <zif91@users.noreply.github.com>
+Date: Fri, 9 Oct 2026 21:58:53 +0300
+Subject: [PATCH] Preserve source-relative asset URLs when compiling LESS to
+ another directory
+
+---
+ src/Minify.php | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/Minify.php b/src/Minify.php
+index 5808090..cece3d2 100644
+--- a/src/Minify.php
++++ b/src/Minify.php
+@@ -104,7 +104,8 @@ class Minify
+                 }
+             }
+ 
+-            $parser->parseFile(MODX_BASE_PATH . $file, MODX_BASE_URL . $this->targetPath);
++            $sourceUri = MODX_BASE_URL . (dirname($file) === '.' ? '' : dirname($file) . '/');
++            $parser->parseFile(MODX_BASE_PATH . $file, $sourceUri);
+ 
+             foreach ($files as $file) {
+                 $parser->parseString('@import "' . $file . '";');
+-- 
+2.23.0
+
