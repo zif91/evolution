@@ -23,6 +23,10 @@ jobs:
           coverage: none
       - name: Check native installer URI and Symfony request creation
         run: php tests/installer-url.php
+      - name: Check dependency integrity and translation provider contract
+        run: |
+          php tests/vendor-integrity.php
+          php tests/application-translation.php
   integration:
     runs-on: ubuntu-latest
     strategy:

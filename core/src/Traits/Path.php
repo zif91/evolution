@@ -307,6 +307,16 @@ trait Path
     }
 
     /**
+     * Get the fallback locale used by Illuminate's translation provider.
+     *
+     * @return string
+     */
+    public function getFallbackLocale()
+    {
+        return $this['config']->get('app.fallback_locale');
+    }
+
+    /**
      * Get the application namespace.
      *
      * @return string
