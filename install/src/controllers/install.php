@@ -8,7 +8,7 @@ error_reporting(E_ALL);
 
 if (file_exists(dirname(__DIR__, 3) . '/assets/cache/siteManager.php')) {
     include_once dirname(__DIR__, 3) . '/assets/cache/siteManager.php';
-} else {
+} elseif (!defined('MGR_DIR')) {
     define('MGR_DIR', 'manager');
 }
 
@@ -33,6 +33,15 @@ global $errors;
 
 $installMode = (int) $_POST['installmode'];
 $installData = (int) !empty($_POST['installdata']);
+
+if (!in_array($installMode, [0, 1, 2], true)
+    || ($installMode === 0 && (trim($_POST['cmsadmin'] ?? '') === ''
+        || ($_POST['cmspassword'] ?? '') === ''
+        || ($_POST['cmspassword'] ?? '') !== ($_POST['cmspasswordconfirm'] ?? '')))) {
+    http_response_code(400);
+    echo htmlspecialchars($_lang['setup_cannot_continue'], ENT_QUOTES, 'UTF-8');
+    return;
+}
 
 // get db info from post
 $database_server = $_POST['databasehost'];
@@ -186,12 +195,19 @@ try {
         define('IN_INSTALL_MODE', true);
         define('MODX_BASE_PATH', dirname(dirname(dirname(__DIR__))) . '/');
 
-        define('MODX_SITE_URL', $_SERVER['HTTP_HOST'] . '/');
+        define('MODX_SITE_URL', installerSiteUrl($_SERVER));
         if (file_exists(MODX_BASE_PATH . 'core/storage/bootstrap/services.php')) {
             unlink(MODX_BASE_PATH . 'core/storage/bootstrap/services.php');
         }
 
         include MODX_BASE_PATH . '/index.php';
+        // Custom config/.env may override values entered in advanced mode.
+        // Never migrate a different database from the one checked by the wizard.
+        $connection = \Illuminate\Support\Facades\DB::connection();
+        if ($connection->getDatabaseName() !== $_POST['database_name']
+            || $connection->getTablePrefix() !== $_POST['tableprefix']) {
+            throw new RuntimeException('Database configuration differs from the database selected in the installer.');
+        }
         if ($installMode != 0 && $database_type == 'pgsql') {
 
             $result = \DB::table('migrations_install')->select('id')->orderBy('id', 'DESC')->first();
@@ -203,7 +219,11 @@ try {
             }
         }
 
-        Console::call('migrate', ['--path' => '../install/stubs/migrations', '--force' => true]);
+        require_once __DIR__ . '/../migrations/prepare.php';
+        prepareInstallerMigrations();
+        if (Console::call('migrate', ['--path' => '../install/stubs/migrations', '--force' => true]) !== 0) {
+            throw new RuntimeException('Installer migrations failed.');
+        }
 
         if ($installMode == 0) {
             seed('install');

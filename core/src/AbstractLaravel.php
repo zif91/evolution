@@ -23,6 +23,8 @@ abstract class AbstractLaravel extends Container implements ApplicationContract
      */
     protected $booted = false;
 
+    protected $terminatingCallbacks = [];
+
     protected $coreAliases = [
         'app' => [
             Interfaces\CoreInterface::class,
@@ -133,6 +135,7 @@ abstract class AbstractLaravel extends Container implements ApplicationContract
     {
         static::setInstance($this);
         $this->instance('app', $this);
+        $this->singleton(\Illuminate\Contracts\Foundation\MaintenanceMode::class, \EvolutionCMS\Support\MaintenanceMode::class);
         $this->instance(Container::class, $this);
 
         $this->register(new EventServiceProvider($this));
@@ -249,9 +252,25 @@ abstract class AbstractLaravel extends Container implements ApplicationContract
     /**
      * {@inheritdoc}
      */
+    public function hasDebugModeEnabled()
+    {
+        return (bool) $this['config']->get('app.debug', false);
+    }
+
+    public function maintenanceMode()
+    {
+        return $this->make(\Illuminate\Contracts\Foundation\MaintenanceMode::class);
+    }
+
+    public function terminating($callback)
+    {
+        $this->terminatingCallbacks[] = $callback;
+        return $this;
+    }
+
     public function isDownForMaintenance()
     {
-        return (int)$this->getConfig('site_status', 0) === 0;
+        return $this->maintenanceMode()->active();
     }
 
     /**
@@ -310,6 +329,11 @@ abstract class AbstractLaravel extends Container implements ApplicationContract
      */
     public function register($provider, $options = [], $force = false)
     {
+        // Accept both Laravel register($provider, $force) and the legacy Evo
+        // register($provider, $options, $force) signature.
+        if (is_bool($options)) {
+            $force = $options;
+        }
         if (($registered = $this->getProvider($provider)) && !$force) {
             return $registered;
         }
@@ -494,9 +518,11 @@ abstract class AbstractLaravel extends Container implements ApplicationContract
      */
     protected function bootProvider(ServiceProvider $provider)
     {
+        $provider->callBootingCallbacks();
         if (method_exists($provider, 'boot')) {
             $this->call([$provider, 'boot']);
         }
+        $provider->callBootedCallbacks();
     }
 
     /**

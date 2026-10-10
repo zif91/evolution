@@ -22,29 +22,18 @@ use Symfony\Component\DependencyInjection\Reference;
  */
 class AddMimeTypeGuesserPass implements CompilerPassInterface
 {
-    private $mimeTypesService;
-    private $mimeTypeGuesserTag;
-
-    public function __construct(string $mimeTypesService = 'mime_types', string $mimeTypeGuesserTag = 'mime.mime_type_guesser')
+    public function process(ContainerBuilder $container): void
     {
-        if (0 < \func_num_args()) {
-            trigger_deprecation('symfony/mime', '5.3', 'Configuring "%s" is deprecated.', __CLASS__);
+        if (!$container->has('mime_types')) {
+            return;
         }
-
-        $this->mimeTypesService = $mimeTypesService;
-        $this->mimeTypeGuesserTag = $mimeTypeGuesserTag;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function process(ContainerBuilder $container)
-    {
-        if ($container->has($this->mimeTypesService)) {
-            $definition = $container->findDefinition($this->mimeTypesService);
-            foreach ($container->findTaggedServiceIds($this->mimeTypeGuesserTag, true) as $id => $attributes) {
-                $definition->addMethodCall('registerGuesser', [new Reference($id)]);
-            }
+        $definition = $container->findDefinition('mime_types');
+        $id = null;
+        foreach ($container->findTaggedServiceIds('mime.mime_type_guesser', true) as $id => $attributes) {
+            $definition->addMethodCall('registerGuesser', [new Reference($id)]);
+        }
+        if (null !== $id) {
+            $definition->setPublic(true);
         }
     }
 }

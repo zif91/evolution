@@ -147,7 +147,7 @@ class ArtisanServiceProvider extends ServiceProvider
     protected function registerMigrateCommand()
     {
         $this->app->singleton('command.migrate', function ($app) {
-            return new MigrateCommand($app['migrator']);
+            return new MigrateCommand($app['migrator'], $app['events']);
         });
     }
 
@@ -158,8 +158,8 @@ class ArtisanServiceProvider extends ServiceProvider
      */
     protected function registerMigrateFreshCommand()
     {
-        $this->app->singleton('command.migrate.fresh', function () {
-            return new MigrateFreshCommand;
+        $this->app->singleton('command.migrate.fresh', function ($app) {
+            return new MigrateFreshCommand($app['migrator']);
         });
     }
 

@@ -24,17 +24,29 @@ class Response extends SymfonyResponse
      * @param  mixed  $content
      * @param  int  $status
      * @param  array  $headers
-     * @return void
      *
      * @throws \InvalidArgumentException
      */
     public function __construct($content = '', $status = 200, array $headers = [])
     {
-        $this->headers = new ResponseHeaderBag($headers);
+        if (method_exists($this, 'setHeaders')) {
+            parent::__construct('', $status, new ResponseHeaderBag($headers));
+        } else {
+            $this->headers = new ResponseHeaderBag($headers);
+            $this->setStatusCode($status);
+            $this->setProtocolVersion('1.0');
+        }
 
         $this->setContent($content);
-        $this->setStatusCode($status);
-        $this->setProtocolVersion('1.0');
+    }
+
+    /**
+     * Get the response content.
+     */
+    #[\Override]
+    public function getContent(): string|false
+    {
+        return transform(parent::getContent(), fn ($content) => $content, '');
     }
 
     /**
@@ -45,7 +57,8 @@ class Response extends SymfonyResponse
      *
      * @throws \InvalidArgumentException
      */
-    public function setContent($content)
+    #[\Override]
+    public function setContent(mixed $content): static
     {
         $this->original = $content;
 
@@ -93,7 +106,7 @@ class Response extends SymfonyResponse
      * Morph the given content into JSON.
      *
      * @param  mixed  $content
-     * @return string
+     * @return string|false
      */
     protected function morphToJson($content)
     {

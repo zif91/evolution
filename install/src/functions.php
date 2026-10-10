@@ -780,3 +780,32 @@ if (!function_exists('seed')) {
         }
     }
 }
+
+/** Build the absolute URI used while bootstrapping the browser installer. */
+function installerSiteUrl(array $server): string
+{
+    $scheme = (!empty($server['HTTPS']) && strcasecmp($server['HTTPS'], 'off') !== 0)
+        || ($server['REQUEST_SCHEME'] ?? '') === 'https' ? 'https' : 'http';
+    // dirname() returns a backslash for the root on Windows. URI paths must
+    // use forward slashes both before and after filesystem path handling.
+    $scriptName = str_replace('\\', '/', $server['SCRIPT_NAME']);
+    $baseUrlPath = str_replace('\\', '/', dirname(dirname($scriptName)));
+    $baseUrlPath = rtrim($baseUrlPath, '/.') . '/';
+
+    return $scheme . '://' . $server['HTTP_HOST'] . $baseUrlPath;
+}
+
+/** Build one PDO connection string for the wizard and its AJAX checks. */
+function installerDatabaseDsn(string $driver, string $host, string $database = '', $port = null): string
+{
+    if (!in_array($driver, ['mysql', 'pgsql'], true)) {
+        throw new InvalidArgumentException('Unsupported database driver.');
+    }
+    if (preg_match('/^([^:]+):(\d+)$/', $host, $parts)) {
+        $host = $parts[1];
+        $port = $parts[2];
+    }
+    return $driver . ':host=' . $host
+        . ($port !== null && $port !== '' ? ';port=' . (int) $port : '')
+        . ($database !== '' ? ';dbname=' . $database : '');
+}

@@ -4,7 +4,7 @@ namespace Illuminate\Validation;
 
 use Exception;
 use Illuminate\Contracts\Validation\UncompromisedVerifier;
-use Illuminate\Support\Str;
+use Illuminate\Support\Stringable;
 
 class NotPwnedVerifier implements UncompromisedVerifier
 {
@@ -27,7 +27,6 @@ class NotPwnedVerifier implements UncompromisedVerifier
      *
      * @param  \Illuminate\Http\Client\Factory  $factory
      * @param  int|null  $timeout
-     * @return void
      */
     public function __construct($factory, $timeout = null)
     {
@@ -56,7 +55,7 @@ class NotPwnedVerifier implements UncompromisedVerifier
             ->contains(function ($line) use ($hash, $hashPrefix, $threshold) {
                 [$hashSuffix, $count] = explode(':', $line);
 
-                return $hashPrefix.$hashSuffix == $hash && $count > $threshold;
+                return $hashPrefix.$hashSuffix === $hash && $count > $threshold;
             });
     }
 
@@ -85,7 +84,7 @@ class NotPwnedVerifier implements UncompromisedVerifier
     {
         try {
             $response = $this->factory->withHeaders([
-                'Add-Padding' => true,
+                'Add-Padding' => 'true',
             ])->timeout($this->timeout)->get(
                 'https://api.pwnedpasswords.com/range/'.$hashPrefix
             );
@@ -97,8 +96,8 @@ class NotPwnedVerifier implements UncompromisedVerifier
             ? $response->body()
             : '';
 
-        return Str::of($body)->trim()->explode("\n")->filter(function ($line) {
-            return Str::contains($line, ':');
+        return (new Stringable($body))->trim()->explode("\n")->filter(function ($line) {
+            return str_contains($line, ':');
         });
     }
 }

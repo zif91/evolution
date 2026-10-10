@@ -17,7 +17,12 @@ require_once 'src/functions.php';
  **/
 
 $install = new InstallEvo($argv);
-$install->start();
+try {
+    $install->start();
+} catch (Throwable $e) {
+    fwrite(STDERR, 'Installation failed: ' . $e->getMessage() . "\n");
+    exit(1);
+}
 
 class InstallEvo
 {
@@ -218,7 +223,9 @@ class InstallEvo
 
     public function checkRemoveInstall()
     {
-        ob_end_clean();
+        if (ob_get_level() > 0) {
+            ob_end_flush();
+        }
         if ($this->removeInstall != 'y' && $this->removeInstall != 'n') {
             $this->removeInstall = $this->read_line("Do you want remove install directory (y/n)? ");
         }
@@ -326,6 +333,7 @@ class InstallEvo
         $this->setSystemSettings();
         $this->installModulesAndPlugins();
         $this->clearCacheAfterInstall();
+        echo "Evolution CMS installed!\n";
     }
 
     public function writeConfig()
@@ -399,69 +407,18 @@ class InstallEvo
                 }
             }
         }
-        $_POST['database_type'] = $this->databaseType; //костыль для адекватной миграции
-
+        $_POST['database_type'] = evo()->make('db')->connection()->getDriverName();
         if (!class_exists('DB')) {
-            class_alias('\Illuminate\Support\Facades\DB', 'DB');
+            class_alias('\\Illuminate\\Support\\Facades\\DB', 'DB');
+        }
+        require_once __DIR__ . '/src/migrations/prepare.php';
+        prepareInstallerMigrations();
+        $status = Console::call('migrate', ['--path' => '../install/stubs/migrations', '--force' => true]);
+        echo Console::output();
+        if ($status !== 0) {
+            throw new RuntimeException('Installer migrations failed (exit ' . $status . ').');
         }
 
-        echo "Running migrations manually...\n";
-        try {
-            $migrationsPath = __DIR__ . '/stubs/migrations';
-            $migrationFiles = glob($migrationsPath . '/*.php');
-            sort($migrationFiles);
-
-            foreach ($migrationFiles as $file) {
-                $fileName = basename($file);
-                echo "Running migration: {$fileName}\n";
-
-                $content = file_get_contents($file);
-
-                if (preg_match('/class\s+(\w+)\s+extends/', $content, $matches)) {
-                    $className = $matches[1];
-
-                    try {
-                        require_once $file;
-
-                        if (class_exists($className)) {
-                            $migration = new $className();
-                            if (method_exists($migration, 'up')) {
-                                $migration->up();
-                                echo "Migration {$className} completed successfully\n";
-                            }
-                        } else {
-                            echo "Class {$className} not found in {$fileName}\n";
-                        }
-                    } catch (Exception $e) {
-                        echo "Migration {$className} failed: " . $e->getMessage() . "\n";
-                    }
-                } elseif (preg_match('/return\s+new\s+class/', $content)) {
-                    try {
-                        $migration = include $file;
-                        if (is_object($migration) && method_exists($migration, 'up')) {
-                            $migration->up();
-                            echo "Anonymous migration in {$fileName} completed successfully\n";
-                        } else {
-                            echo "Invalid anonymous migration in {$fileName}\n";
-                        }
-                    } catch (Exception $e) {
-                        echo "Anonymous migration in {$fileName} failed: " . $e->getMessage() . "\n";
-                    }
-                } else {
-                    echo "No valid migration class found in {$fileName}\n";
-                }
-            }
-
-            echo "All migrations completed\n";
-        } catch (Exception $e) {
-            echo "Migration error: " . $e->getMessage() . "\n";
-            echo "File: " . $e->getFile() . " Line: " . $e->getLine() . "\n";
-            throw $e;
-        } catch (Error $e) {
-            echo "PHP Error during migration: " . $e->getMessage() . "\n";
-            echo "File: " . $e->getFile() . " Line: " . $e->getLine() . "\n";
-            throw $e;
-        }
     }
 
     /**
@@ -484,7 +441,7 @@ class InstallEvo
                 $content = file_get_contents($file);
                 if (preg_match('/class\s+(\w+)\s+extends/', $content, $matches)) {
                     $className = $matches[1];
-                    $fullClassName = 'EvolutionCMS\\Installer\\Install\\' . $className;
+                    $fullClassName = 'EvolutionCMS\\Installer\\' . ($mode === 'update' ? 'Update\\' : 'Install\\') . $className;
 
                     try {
                         require_once $file;
@@ -496,11 +453,10 @@ class InstallEvo
                                 echo "Seeder {$className} completed successfully\n";
                             }
                         } else {
-                            echo "Class {$fullClassName} not found in {$fileName}\n";
+                            throw new RuntimeException("Class {$fullClassName} not found in {$fileName}");
                         }
                     } catch (Exception $e) {
-                        echo "Seeder {$className} failed: " . $e->getMessage() . "\n";
-                        continue;
+                        throw $e;
                     }
                 } else {
                     echo "Could not extract class name from {$fileName}\n";

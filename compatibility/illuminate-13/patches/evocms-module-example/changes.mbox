@@ -1,0 +1,213 @@
+From 48cc43f17367a7ec4fcb79ee0abb7efde8813ee9 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Fri, 9 Oct 2026 21:24:37 +0300
+Subject: [PATCH 1/2] Fix native Save and provide English fallback labels
+
+---
+ lang/en/global.php   | 17 +++++++++++++++++
+ views/edit.blade.php |  1 +
+ 2 files changed, 18 insertions(+)
+ create mode 100644 lang/en/global.php
+
+diff --git a/lang/en/global.php b/lang/en/global.php
+new file mode 100644
+index 0000000..237c9fa
+--- /dev/null
++++ b/lang/en/global.php
+@@ -0,0 +1,17 @@
++<?php
++
++return [
++    'main_caption' => 'Example module',
++    'saved' => 'Saved!',
++    'refresh' => 'Refresh',
++    'items_list' => 'Items',
++    'item_caption' => 'Item ":name"',
++    'item_name' => 'Name',
++    'created_at' => 'Created',
++    'updated_at' => 'Updated',
++    'shown_from' => 'Shown: :count of :total',
++    'edit_item' => 'Edit item',
++    'no_items' => 'The list is empty',
++    'item_edit' => 'Edit item',
++    'some_errors' => 'Please correct the errors',
++];
+diff --git a/views/edit.blade.php b/views/edit.blade.php
+index a8ebef5..96c1170 100644
+--- a/views/edit.blade.php
++++ b/views/edit.blade.php
+@@ -31,6 +31,7 @@
+         </script>
+ 
+         <form name="edit" action="" method="post" onsubmit="documentDirty = false;">
++            @csrf
+             <div class="form-group">
+                 <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $item->name) }}">
+ 
+-- 
+2.23.0
+
+
+From 0a870ea1bb7f0da6a907c7ef7f63f796a3a6fa39 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Fri, 9 Oct 2026 21:41:36 +0300
+Subject: [PATCH 2/2] Keep module translations readable when host fallback
+ locale is absent
+
+---
+ src/Controllers/ExampleController.php |  4 ++--
+ src/Support/Translator.php            | 14 ++++++++++++++
+ views/edit.blade.php                  |  6 +++---
+ views/index.blade.php                 | 18 +++++++++---------
+ views/layout.blade.php                |  2 +-
+ 5 files changed, 29 insertions(+), 15 deletions(-)
+ create mode 100644 src/Support/Translator.php
+
+diff --git a/src/Controllers/ExampleController.php b/src/Controllers/ExampleController.php
+index 9142f08..15a0acd 100644
+--- a/src/Controllers/ExampleController.php
++++ b/src/Controllers/ExampleController.php
+@@ -43,7 +43,7 @@ class ExampleController
+ 
+         if ($validator->fails()) {
+             return redirect()->route('example::edit_item', $item->id)
+-                ->with('error', __('example::global.some_errors'))
++                ->with('error', \EvolutionCMS\Example\Support\Translator::get('example::global.some_errors'))
+                 ->withErrors($validator)
+                 ->withInput();
+         }
+@@ -52,6 +52,6 @@ class ExampleController
+         $item->save();
+ 
+         return redirect()->route('example::index')
+-            ->with('success', __('example::global.saved'));
++            ->with('success', \EvolutionCMS\Example\Support\Translator::get('example::global.saved'));
+     }
+ }
+diff --git a/src/Support/Translator.php b/src/Support/Translator.php
+new file mode 100644
+index 0000000..5d705cd
+--- /dev/null
++++ b/src/Support/Translator.php
+@@ -0,0 +1,14 @@
++<?php
++
++namespace EvolutionCMS\Example\Support;
++
++class Translator
++{
++    public static function get($key, array $replace = [])
++    {
++        $value = __($key, $replace);
++
++        // Keep this module readable when the host has no fallback locale configured.
++        return $value === $key ? __($key, $replace, 'en') : $value;
++    }
++}
+diff --git a/views/edit.blade.php b/views/edit.blade.php
+index 96c1170..efe7450 100644
+--- a/views/edit.blade.php
++++ b/views/edit.blade.php
+@@ -1,9 +1,9 @@
+ @extends('example::layout')
+ 
+ @section('pagetitle')
+-    @lang('example::global.item_caption', [
++    {{ \EvolutionCMS\Example\Support\Translator::get('example::global.item_caption', [
+         'name' => $item->name,
+-    ])
++    ]) }}
+ @endsection
+ 
+ @section('buttons')
+@@ -23,7 +23,7 @@
+ @section('body')
+     <div class="tab-page" id="tab_main">
+         <h2 class="tab">
+-            @lang('example::global.item_edit')
++            {{ \EvolutionCMS\Example\Support\Translator::get('example::global.item_edit') }}
+         </h2>
+ 
+         <script type="text/javascript">
+diff --git a/views/index.blade.php b/views/index.blade.php
+index 04e1407..d1baadc 100644
+--- a/views/index.blade.php
++++ b/views/index.blade.php
+@@ -4,7 +4,7 @@
+     <div id="actions">
+         <div class="btn-group">
+             <a href="javascript:;" class="btn btn-success" onclick="location.reload();">
+-                <i class="fa fa-refresh"></i><span>@lang('example::global.refresh')</span>
++                <i class="fa fa-refresh"></i><span>{{ \EvolutionCMS\Example\Support\Translator::get('example::global.refresh') }}</span>
+             </a>
+         </div>
+     </div>
+@@ -13,7 +13,7 @@
+ @section('body')
+     <div class="tab-page" id="tab_main">
+         <h2 class="tab">
+-            @lang('example::global.items_list')
++            {{ \EvolutionCMS\Example\Support\Translator::get('example::global.items_list') }}
+         </h2>
+ 
+         <script type="text/javascript">
+@@ -26,9 +26,9 @@
+                     <thead>
+                         <tr>
+                             <td style="width: 1%;"></td>
+-                            <td>@lang('example::global.item_name')</td>
+-                            <td>@lang('example::global.created_at')</td>
+-                            <td>@lang('example::global.updated_at')</td>
++                            <td>{{ \EvolutionCMS\Example\Support\Translator::get('example::global.item_name') }}</td>
++                            <td>{{ \EvolutionCMS\Example\Support\Translator::get('example::global.created_at') }}</td>
++                            <td>{{ \EvolutionCMS\Example\Support\Translator::get('example::global.updated_at') }}</td>
+                         </tr>
+                     </thead>
+ 
+@@ -37,10 +37,10 @@
+                             <td colspan="4">
+                                 {{ $list->links('example::links') }}
+ 
+-                                @lang('example::global.shown_from', [
++                                {{ \EvolutionCMS\Example\Support\Translator::get('example::global.shown_from', [
+                                     'count' => $list->count(),
+                                     'total' => $list->total(),
+-                                ])
++                                ]) }}
+                             </td>
+                         </tr>
+                     </tfoot>
+@@ -49,7 +49,7 @@
+                         @forelse ($list as $item)
+                             <tr>
+                                 <td>
+-                                    <a href="{{ route('example::edit_item', $item->id) }}" class="fa fa-pencil" title="@lang('example::global.edit_item')"></a>
++                                    <a href="{{ route('example::edit_item', $item->id) }}" class="fa fa-pencil" title="{{ \EvolutionCMS\Example\Support\Translator::get('example::global.edit_item') }}"></a>
+                                 </td>
+                                 <td><a href="{{ route('example::edit_item', $item->id) }}">{{ $item->name }}</a></td>
+                                 <td>{{ $item->created_at ? $item->created_at->format('d.m.Y H:i:s') : '' }}</td>
+@@ -58,7 +58,7 @@
+                         @empty
+                             <tr>
+                                 <td colspan="4" class="text-center">
+-                                    @lang('example::global.no_items')
++                                    {{ \EvolutionCMS\Example\Support\Translator::get('example::global.no_items') }}
+                                 </td>
+                             </tr>
+                         @endforelse
+diff --git a/views/layout.blade.php b/views/layout.blade.php
+index 556a48c..cc9b6e1 100644
+--- a/views/layout.blade.php
++++ b/views/layout.blade.php
+@@ -3,7 +3,7 @@
+ <div class="module-page">
+     <h1>
+         <i class="fa fa-list"></i>
+-        @yield('pagetitle', __('example::global.main_caption'))
++        @yield('pagetitle', \EvolutionCMS\Example\Support\Translator::get('example::global.main_caption'))
+     </h1>
+ 
+     @yield('buttons')
+-- 
+2.23.0
+

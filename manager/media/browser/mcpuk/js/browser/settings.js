@@ -51,13 +51,15 @@ browser.initSettings = function() {
 
     var orders = this.orders;
 
-    if (!_.kuki.isSet('order'))
+    if ($.inArray(_.kuki.get('order'), orders) === -1)
         _.kuki.set('order', 'name');
 
     if (!_.kuki.isSet('orderDesc'))
         _.kuki.set('orderDesc', 'off');
 
-    $('#order input[value="' + _.kuki.get('order') + '"]').get(0).checked = true;
+    var order = _.kuki.get('order');
+    if ($.inArray(order, orders) === -1) order = 'name';
+    $('#order input').filter(function() { return this.value === order; }).prop('checked', true);
     $('#order input[name="desc"]').get(0).checked = (_.kuki.get('orderDesc') == 'on');
 
     $('#order input[type="radio"]').click(function() {
@@ -70,7 +72,7 @@ browser.initSettings = function() {
         browser.orderFiles();
     });
 
-    if (!_.kuki.isSet('view'))
+    if ($.inArray(_.kuki.get('view'), ['thumbs', 'list']) === -1)
         _.kuki.set('view', 'thumbs');
 
     if (_.kuki.get('view') == 'list') {
@@ -78,7 +80,8 @@ browser.initSettings = function() {
         $('#show input').each(function() { this.disabled = true; });
     }
 
-    $('#view input[value="' + _.kuki.get('view') + '"]').get(0).checked = true;
+    var view = _.kuki.get('view') === 'list' ? 'list' : 'thumbs';
+    $('#view input').filter(function() { return this.value === view; }).prop('checked', true);
 
     $('#view input').click(function() {
         var view = $(this).attr('value');

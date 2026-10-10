@@ -1,0 +1,30 @@
+From 69322cc3f875d4a017e066dfca047938b2aaa816 Mon Sep 17 00:00:00 2001
+From: zif91 <zif91@users.noreply.github.com>
+Date: Fri, 9 Oct 2026 21:31:07 +0300
+Subject: [PATCH] fix(validation): reject missing email domains before IDN
+ conversion
+
+---
+ assets/snippets/FormLister/lib/Validator.php | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/assets/snippets/FormLister/lib/Validator.php b/assets/snippets/FormLister/lib/Validator.php
+index 2a744f7..a57843b 100644
+--- a/assets/snippets/FormLister/lib/Validator.php
++++ b/assets/snippets/FormLister/lib/Validator.php
+@@ -321,7 +321,11 @@ class Validator
+     {
+         if (function_exists('idn_to_ascii')) {
+             $_email = explode('@', $email);
+-            $_email[1] = $_email[1] ?? '';
++            // An absent domain is an ordinary validation failure. PHP 8.4
++            // throws ValueError when idn_to_ascii receives an empty domain.
++            if (count($_email) !== 2 || $_email[1] === '') {
++                return $email;
++            }
+             if (defined('IDNA_NONTRANSITIONAL_TO_ASCII') && defined('INTL_IDNA_VARIANT_UTS46')) {
+                 $_email[1] = idn_to_ascii($_email[1], IDNA_NONTRANSITIONAL_TO_ASCII, INTL_IDNA_VARIANT_UTS46);
+             } else {
+-- 
+2.23.0
+

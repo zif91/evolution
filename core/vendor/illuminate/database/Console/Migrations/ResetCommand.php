@@ -2,20 +2,28 @@
 
 namespace Illuminate\Database\Console\Migrations;
 
+use Illuminate\Console\Command;
 use Illuminate\Console\ConfirmableTrait;
+use Illuminate\Console\Prohibitable;
 use Illuminate\Database\Migrations\Migrator;
-use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'migrate:reset')]
 class ResetCommand extends BaseCommand
 {
-    use ConfirmableTrait;
+    use ConfirmableTrait, Prohibitable;
 
     /**
-     * The console command name.
+     * The name and signature of the console command.
      *
      * @var string
      */
-    protected $name = 'migrate:reset';
+    protected $signature = 'migrate:reset
+                    {--database= : The database connection to use}
+                    {--force : Force the operation to run when in production}
+                    {--path=* : The path(s) to the migrations files to be executed}
+                    {--realpath : Indicate any provided migration file paths are pre-resolved absolute paths}
+                    {--pretend : Dump the SQL queries that would be run}';
 
     /**
      * The console command description.
@@ -35,7 +43,6 @@ class ResetCommand extends BaseCommand
      * Create a new migration rollback command instance.
      *
      * @param  \Illuminate\Database\Migrations\Migrator  $migrator
-     * @return void
      */
     public function __construct(Migrator $migrator)
     {
@@ -51,8 +58,8 @@ class ResetCommand extends BaseCommand
      */
     public function handle()
     {
-        if (! $this->confirmToProceed()) {
-            return 1;
+        if ($this->isProhibited() || ! $this->confirmToProceed()) {
+            return self::FAILURE;
         }
 
         return $this->migrator->usingConnection($this->option('database'), function () {
@@ -60,32 +67,12 @@ class ResetCommand extends BaseCommand
             // start trying to rollback and re-run all of the migrations. If it's not
             // present we'll just bail out with an info message for the developers.
             if (! $this->migrator->repositoryExists()) {
-                return $this->comment('Migration table not found.');
+                return $this->components->warn('Migration table not found.');
             }
 
             $this->migrator->setOutput($this->output)->reset(
                 $this->getMigrationPaths(), $this->option('pretend')
             );
         });
-    }
-
-    /**
-     * Get the console command options.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['database', null, InputOption::VALUE_OPTIONAL, 'The database connection to use'],
-
-            ['force', null, InputOption::VALUE_NONE, 'Force the operation to run when in production'],
-
-            ['path', null, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'The path(s) to the migrations files to be executed'],
-
-            ['realpath', null, InputOption::VALUE_NONE, 'Indicate any provided migration file paths are pre-resolved absolute paths'],
-
-            ['pretend', null, InputOption::VALUE_NONE, 'Dump the SQL queries that would be run'],
-        ];
     }
 }

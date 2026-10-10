@@ -2,18 +2,25 @@
 
 namespace Illuminate\Console\Scheduling;
 
+use Illuminate\Console\Application;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\ProcessUtils;
+use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
+#[AsCommand(name: 'schedule:work')]
 class ScheduleWorkCommand extends Command
 {
     /**
-     * The console command name.
+     * The name and signature of the console command.
      *
      * @var string
      */
-    protected $name = 'schedule:work';
+    protected $signature = 'schedule:work
+        {--run-output-file= : The file to direct <info>schedule:run</info> output to}
+        {--whisper : Do not output message indicating that no jobs were ready to run}';
 
     /**
      * The console command description.
@@ -23,50 +30,108 @@ class ScheduleWorkCommand extends Command
     protected $description = 'Start the schedule worker';
 
     /**
+     * The "schedule:run" executions that are currently running.
+     *
+     * @var \Symfony\Component\Process\Process[]
+     */
+    protected $executions = [];
+
+    /**
+     * Indicates if the schedule worker should exit.
+     *
+     * @var bool
+     */
+    protected $shouldQuit = false;
+
+    /**
      * Execute the console command.
      *
-     * @return void
+     * @return int
      */
     public function handle()
     {
-        $this->info('Schedule worker started successfully.');
+        $this->components->info(
+            'Running scheduled tasks.',
+            $this->getLaravel()->environment('local') ? OutputInterface::VERBOSITY_NORMAL : OutputInterface::VERBOSITY_VERBOSE
+        );
 
-        [$lastExecutionStartedAt, $keyOfLastExecutionWithOutput, $executions] = [null, null, []];
+        $command = Application::formatCommandString('schedule:run');
+
+        if ($this->option('whisper')) {
+            $command .= ' --whisper';
+        }
+
+        if ($this->option('run-output-file')) {
+            $command .= ' >> '.ProcessUtils::escapeArgument($this->option('run-output-file')).' 2>&1';
+        }
+
+        $this->listenForSignals();
+
+        return $this->work($command);
+    }
+
+    /**
+     * Run the schedule worker loop until it is signalled to stop.
+     *
+     * @param  string  $command
+     * @return int
+     */
+    protected function work($command)
+    {
+        $lastExecutionStartedAt = Carbon::now()->subMinutes(10);
 
         while (true) {
-            usleep(100 * 1000);
+            $this->sleep();
 
-            if (Carbon::now()->second === 0 &&
+            // Once a stop signal has been received we stop scheduling new runs so
+            // that the worker can stop any in-flight executions before exiting
+            // which lets the current tasks execute instead of being stopped.
+            if (! $this->shouldQuit &&
+                Carbon::now()->second === 0 &&
                 ! Carbon::now()->startOfMinute()->equalTo($lastExecutionStartedAt)) {
-                $executions[] = $execution = new Process([
-                    PHP_BINARY,
-                    defined('ARTISAN_BINARY') ? ARTISAN_BINARY : 'artisan',
-                    'schedule:run',
-                ]);
+                $this->executions[] = $execution = Process::fromShellCommandline($command, base_path());
 
                 $execution->start();
 
                 $lastExecutionStartedAt = Carbon::now()->startOfMinute();
             }
 
-            foreach ($executions as $key => $execution) {
-                $output = trim($execution->getIncrementalOutput()).
-                          trim($execution->getIncrementalErrorOutput());
+            foreach ($this->executions as $key => $execution) {
+                $output = $execution->getIncrementalOutput().
+                    $execution->getIncrementalErrorOutput();
 
-                if (! empty($output)) {
-                    if ($key !== $keyOfLastExecutionWithOutput) {
-                        $this->info(PHP_EOL.'['.date('c').'] Execution #'.($key + 1).' output:');
-
-                        $keyOfLastExecutionWithOutput = $key;
-                    }
-
-                    $this->output->writeln($output);
-                }
+                $this->output->write(ltrim($output, "\n"));
 
                 if (! $execution->isRunning()) {
-                    unset($executions[$key]);
+                    unset($this->executions[$key]);
                 }
             }
+
+            if ($this->shouldQuit && empty($this->executions)) {
+                return static::SUCCESS;
+            }
         }
+    }
+
+    /**
+     * Listen for the signals that should terminate the schedule worker.
+     *
+     * @return void
+     */
+    protected function listenForSignals()
+    {
+        $this->trap(fn () => [SIGINT, SIGTERM, SIGQUIT], function () {
+            $this->shouldQuit = true;
+        });
+    }
+
+    /**
+     * Sleep for a short period before the next worker tick.
+     *
+     * @return void
+     */
+    protected function sleep()
+    {
+        usleep(100 * 1000);
     }
 }

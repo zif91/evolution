@@ -3,6 +3,7 @@
 namespace Illuminate\Redis\Limiters;
 
 use Illuminate\Contracts\Redis\LimiterTimeoutException;
+use Illuminate\Support\Sleep;
 
 class DurationLimiter
 {
@@ -55,7 +56,6 @@ class DurationLimiter
      * @param  string  $name
      * @param  int  $maxLocks
      * @param  int  $decay
-     * @return void
      */
     public function __construct($redis, $name, $maxLocks, $decay)
     {
@@ -70,11 +70,12 @@ class DurationLimiter
      *
      * @param  int  $timeout
      * @param  callable|null  $callback
+     * @param  int  $sleep
      * @return mixed
      *
      * @throws \Illuminate\Contracts\Redis\LimiterTimeoutException
      */
-    public function block($timeout, $callback = null)
+    public function block($timeout, $callback = null, $sleep = 750)
     {
         $starting = time();
 
@@ -83,7 +84,7 @@ class DurationLimiter
                 throw new LimiterTimeoutException;
             }
 
-            usleep(750 * 1000);
+            Sleep::usleep($sleep * 1000);
         }
 
         if (is_callable($callback)) {
@@ -186,7 +187,7 @@ LUA;
         return <<<'LUA'
 
 if redis.call('EXISTS', KEYS[1]) == 0 then
-    return {0, ARGV[2] + ARGV[3]}
+    return {ARGV[2] + ARGV[3], tonumber(ARGV[4])}
 end
 
 if ARGV[1] >= redis.call('HGET', KEYS[1], 'start') and ARGV[1] <= redis.call('HGET', KEYS[1], 'end') then
@@ -196,7 +197,7 @@ if ARGV[1] >= redis.call('HGET', KEYS[1], 'start') and ARGV[1] <= redis.call('HG
     }
 end
 
-return {0, ARGV[2] + ARGV[3]}
+return {ARGV[2] + ARGV[3], tonumber(ARGV[4])}
 LUA;
     }
 }

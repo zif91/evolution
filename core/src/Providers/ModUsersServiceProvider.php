@@ -13,7 +13,11 @@ class ModUsersServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->bind('modUsers', function ($modx) {
-            return new modUsers($modx);
+            // Prefer an installed legacy implementation; otherwise use the bundled MODxAPI.
+            $class = class_exists(\modUsers::class)
+                ? \modUsers::class
+                : \Pathologic\EvolutionCMS\MODxAPI\modUsers::class;
+            return new $class($modx);
         });
 
         $this->app->setEvolutionProperty('modUsers', 'user');

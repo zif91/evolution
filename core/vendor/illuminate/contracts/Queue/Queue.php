@@ -13,6 +13,38 @@ interface Queue
     public function size($queue = null);
 
     /**
+     * Get the number of pending jobs.
+     *
+     * @param  string|null  $queue
+     * @return int
+     */
+    public function pendingSize($queue = null);
+
+    /**
+     * Get the number of delayed jobs.
+     *
+     * @param  string|null  $queue
+     * @return int
+     */
+    public function delayedSize($queue = null);
+
+    /**
+     * Get the number of reserved jobs.
+     *
+     * @param  string|null  $queue
+     * @return int
+     */
+    public function reservedSize($queue = null);
+
+    /**
+     * Get the creation timestamp of the oldest pending job, excluding delayed jobs.
+     *
+     * @param  string|null  $queue
+     * @return int|null
+     */
+    public function creationTimeOfOldestPendingJob($queue = null);
+
+    /**
      * Push a new job onto the queue.
      *
      * @param  string|object  $job
@@ -37,13 +69,12 @@ interface Queue
      *
      * @param  string  $payload
      * @param  string|null  $queue
-     * @param  array  $options
      * @return mixed
      */
     public function pushRaw($payload, $queue = null, array $options = []);
 
     /**
-     * Push a new job onto the queue after a delay.
+     * Push a new job onto the queue after (n) seconds.
      *
      * @param  \DateTimeInterface|\DateInterval|int  $delay
      * @param  string|object  $job
@@ -54,7 +85,7 @@ interface Queue
     public function later($delay, $job, $data = '', $queue = null);
 
     /**
-     * Push a new job onto the queue after a delay.
+     * Push a new job onto a specific queue after (n) seconds.
      *
      * @param  string  $queue
      * @param  \DateTimeInterface|\DateInterval|int  $delay

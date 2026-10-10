@@ -3,6 +3,7 @@
 namespace Illuminate\Session;
 
 use Illuminate\Contracts\Cache\Repository as CacheContract;
+use RuntimeException;
 use SessionHandlerInterface;
 
 class CacheBasedSessionHandler implements SessionHandlerInterface
@@ -26,7 +27,6 @@ class CacheBasedSessionHandler implements SessionHandlerInterface
      *
      * @param  \Illuminate\Contracts\Cache\Repository  $cache
      * @param  int  $minutes
-     * @return void
      */
     public function __construct(CacheContract $cache, $minutes)
     {
@@ -39,8 +39,7 @@ class CacheBasedSessionHandler implements SessionHandlerInterface
      *
      * @return bool
      */
-    #[\ReturnTypeWillChange]
-    public function open($savePath, $sessionName)
+    public function open($savePath, $sessionName): bool
     {
         return true;
     }
@@ -50,8 +49,7 @@ class CacheBasedSessionHandler implements SessionHandlerInterface
      *
      * @return bool
      */
-    #[\ReturnTypeWillChange]
-    public function close()
+    public function close(): bool
     {
         return true;
     }
@@ -59,10 +57,29 @@ class CacheBasedSessionHandler implements SessionHandlerInterface
     /**
      * {@inheritdoc}
      *
-     * @return string|false
+     * @return string
      */
-    #[\ReturnTypeWillChange]
-    public function read($sessionId)
+    public function create_sid(): string
+    {
+        return session_create_id() ?: throw new RuntimeException('Unable to create a session ID.');
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return bool
+     */
+    public function validateId($id): bool
+    {
+        return $this->cache->has($id);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return string
+     */
+    public function read($sessionId): string
     {
         return $this->cache->get($sessionId, '');
     }
@@ -72,8 +89,7 @@ class CacheBasedSessionHandler implements SessionHandlerInterface
      *
      * @return bool
      */
-    #[\ReturnTypeWillChange]
-    public function write($sessionId, $data)
+    public function write($sessionId, $data): bool
     {
         return $this->cache->put($sessionId, $data, $this->minutes * 60);
     }
@@ -83,8 +99,7 @@ class CacheBasedSessionHandler implements SessionHandlerInterface
      *
      * @return bool
      */
-    #[\ReturnTypeWillChange]
-    public function destroy($sessionId)
+    public function destroy($sessionId): bool
     {
         return $this->cache->forget($sessionId);
     }
@@ -92,12 +107,11 @@ class CacheBasedSessionHandler implements SessionHandlerInterface
     /**
      * {@inheritdoc}
      *
-     * @return int|false
+     * @return int
      */
-    #[\ReturnTypeWillChange]
-    public function gc($lifetime)
+    public function gc($lifetime): int
     {
-        return true;
+        return 0;
     }
 
     /**

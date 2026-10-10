@@ -13,7 +13,11 @@ class ModResourceServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->bind('modResource', function ($modx) {
-            return new modResource($modx);
+            // Prefer an installed legacy implementation; otherwise use the bundled MODxAPI.
+            $class = class_exists(\modResource::class)
+                ? \modResource::class
+                : \Pathologic\EvolutionCMS\MODxAPI\modResource::class;
+            return new $class($modx);
         });
 
         $this->app->setEvolutionProperty('modResource', 'doc');

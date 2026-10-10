@@ -12,7 +12,6 @@
     <input type="hidden" value="[+install_language+]" name="language" />
     <input type="hidden" value="1" name="chkagree" [+checkedChkagree+] />
     <input type="hidden" value="[+installMode+]" name="installmode" />
-    <input type="hidden" value="[+database_connection_method+]" name="database_connection_method" />
     <h2>[%connection_screen_database_info%]</h2>
     <h3>[%connection_screen_server_connection_information%]</h3>
     <p>[%connection_screen_server_connection_note%]</p>
@@ -35,7 +34,7 @@
     </p>
     <p class="labelHolder">
         <label for="databaseloginpassword">[%connection_screen_database_pass%]</label>
-        <input type="text" id="databaseloginpassword" name="databaseloginpassword" value="[+databaseloginpassword+]" />
+        <input type="password" id="databaseloginpassword" name="databaseloginpassword" value="[+databaseloginpassword+]" />
     </p>
     <!-- connection test action/status message -->
     <div class="clickHere">
@@ -230,21 +229,21 @@
       alert('[%alert_database_test_connection%]');
       return false;
     }
-    if (dbsv.indexOf('failed') >= 0) {
+    if (!dbs.querySelector('#database_pass')) {
       alert('[%alert_database_test_connection_failed%]');
       return false;
     }
-    if (form.cmsadmin && form.cmsadmin.value === '') {
+    if (installMode === 0 && form.cmsadmin && form.cmsadmin.value === '') {
       form.cmsadmin.parentElement.classList.add('has-error');
       form.cmsadmin.focus();
       return false;
     }
-    if (form.cmspassword && form.cmspassword.value === '') {
+    if (installMode === 0 && form.cmspassword && form.cmspassword.value === '') {
       form.cmspassword.parentElement.classList.add('has-error');
       form.cmspassword.focus();
       return false;
     }
-    if (form.cmspasswordconfirm && form.cmspasswordconfirm.value !== form.cmspasswordconfirm.value) {
+    if (installMode === 0 && form.cmspasswordconfirm && form.cmspasswordconfirm.value !== form.cmspassword.value) {
       form.cmspasswordconfirm.parentElement.classList.add('has-error');
       form.cmspasswordconfirm.focus();
       return false;

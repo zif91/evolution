@@ -46,7 +46,7 @@ echo '<h3>' . $_lang['summary_setup_check'] . '</h3>';
 $errors = 0;
 
 // check PHP version
-define('PHP_MIN_VERSION', '7.4.0');
+define('PHP_MIN_VERSION', '8.3.0');
 $phpMinVersion = PHP_MIN_VERSION; // Maybe not necessary. For backward compatibility
 echo '<p>' . $_lang['checking_php_version'];
 // -1 if left is less, 0 if equal, +1 if left is higher
@@ -181,9 +181,9 @@ if (!$isWriteable) {
 // connect to the database
 if ($installMode == 1) {
     if (is_file(EVO_CORE_PATH . 'custom/config/database/connections/default.php')) {
-        $db_config = include_once EVO_CORE_PATH . 'custom/config/database/connections/default.php';
+        $db_config = include EVO_CORE_PATH . 'custom/config/database/connections/default.php';
     } else {
-        $db_config = include_once EVO_CORE_PATH . 'config/database/connections/default.php';
+        $db_config = include EVO_CORE_PATH . 'config/database/connections/default.php';
     }
 
     $database_server = $db_config['host'];
@@ -191,7 +191,7 @@ if ($installMode == 1) {
     $database_user = $db_config['username'];
     $database_password = $db_config['password'];
     $database_collation = $db_config['collation'];
-    $database_charset = substr($database_collation, 0, strpos($database_collation, '_') - 1);
+    $database_charset = substr($database_collation, 0, strpos($database_collation, '_'));
     $database_connection_charset = $db_config['charset'];
     $database_connection_method = $db_config['method'];
     $dbase = '`' . $db_config['database'] . '`';
@@ -204,7 +204,7 @@ if ($installMode == 1) {
     $database_user = $_SESSION['databaseloginname'];
     $database_password = $_SESSION['databaseloginpassword'];
     $database_collation = $_POST['database_collation'];
-    $database_charset = substr($database_collation, 0, strpos($database_collation, '_') - 1);
+    $database_charset = substr($database_collation, 0, strpos($database_collation, '_'));
     $database_connection_charset = $_POST['database_connection_charset'];
     $database_connection_method = $_POST['database_connection_method'];
     $dbase = '`' . $_POST['database_name'] . '`';
@@ -227,19 +227,8 @@ try {
 
 }
 
-// check the database collation if not specified in the configuration
-if (!isset($database_connection_charset) || empty($database_connection_charset)) {
-    if (!$rs = mysqli_query($conn, "show session variables like 'collation_database'")) {
-        $rs = mysqli_query($conn, "show session variables like 'collation_server'");
-    }
-    if ($rs && $collation = mysqli_fetch_row($rs)) {
-        $database_collation = $collation[1];
-    }
-    if (empty($database_collation)) {
-        $database_collation = 'utf8_unicode_ci';
-    }
-    $database_charset = substr($database_collation, 0, strpos($database_collation, '_') - 1);
-    $database_connection_charset = $database_charset;
+if (empty($database_connection_charset)) {
+    $database_connection_charset = explode('_', $database_collation ?: 'utf8mb4_general_ci')[0];
 }
 
 // determine the database connection method if not specified in the configuration
@@ -248,7 +237,7 @@ if (!isset($database_connection_method) || empty($database_connection_method)) {
 }
 
 // check table prefix
-if ($dbh->errorCode() == 0 && $installMode == 0) {
+if (isset($dbh) && $dbh->errorCode() == 0 && $installMode == 0) {
     echo '<p>' . $_lang['checking_table_prefix'] . $table_prefix . '`: ';
     try {
         $result = $dbh->query("SELECT COUNT(*) FROM {$table_prefix}site_content");
@@ -263,7 +252,7 @@ if ($dbh->errorCode() == 0 && $installMode == 0) {
         echo '<span class="ok">' . $_lang['ok'] . '</span></p>';
 
     }
-} elseif ($dbh->errorCode() == 0 && $installMode == 2) {
+} elseif (isset($dbh) && $dbh->errorCode() == 0 && $installMode > 0) {
     echo '<p>' . $_lang['checking_table_prefix'] . $table_prefix . '`: ';
     try {
         $result = $dbh->query("SELECT COUNT(*) FROM {$table_prefix}site_content");

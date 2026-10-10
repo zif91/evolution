@@ -1,0 +1,26 @@
+From d668e2bd0ff99af34b0a12dc83f5552c785b9631 Mon Sep 17 00:00:00 2001
+From: zif91 <zif91@users.noreply.github.com>
+Date: Fri, 9 Oct 2026 21:31:14 +0300
+Subject: [PATCH] Send required ResultURL acknowledgement on successful payment
+
+---
+ assets/plugins/commerce/src/Payments/RobokassaPayment.php | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/assets/plugins/commerce/src/Payments/RobokassaPayment.php b/assets/plugins/commerce/src/Payments/RobokassaPayment.php
+index 3d9c0e4..7c116c1 100644
+--- a/assets/plugins/commerce/src/Payments/RobokassaPayment.php
++++ b/assets/plugins/commerce/src/Payments/RobokassaPayment.php
+@@ -151,6 +151,9 @@ class RobokassaPayment extends Payment implements \Commerce\Interfaces\Payment
+             return false;
+         }
+ 
++        // ResultURL acknowledgement required for both first and repeated
++        // successful notifications: https://docs.robokassa.ru/ru/notifications-and-redirects
++        echo 'OK' . $data['InvId'];
+         return true;
+     }
+ 
+-- 
+2.23.0
+

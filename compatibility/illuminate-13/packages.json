@@ -1,0 +1,167 @@
+[
+  {
+    "package": "DocLister",
+    "upstream": "https://github.com/AgelxNash/DocLister.git",
+    "base": "da0584fd459f401be179fe1bbe95cbb605d47f32",
+    "commit": "66b562191e07d8fdc9b479e833c68e7d0cfa12a2",
+    "sourceArchive": "DocLister-66b562191e07.zip",
+    "sourceArchiveSHA256": "4b0df231eed7ac66297929e5169486ac7f8571e1f6ecadc46116ad1f4eed98e3",
+    "patch": "patches/DocLister/changes.mbox",
+    "patchSHA256": "07d970aa1e0a9690ef8b8c011ec584b6d942e9883bf5934ec35fe803cf328b95",
+    "releaseCandidateOnly": false
+  },
+  {
+    "package": "FormLister",
+    "upstream": "https://github.com/Pathologic/FormLister.git",
+    "base": "41e4a34d25606074b5e7c75a3ddb6eecfd144957",
+    "commit": "69322cc3f875d4a017e066dfca047938b2aaa816",
+    "sourceArchive": "FormLister-69322cc3f875.zip",
+    "sourceArchiveSHA256": "ccee080fe78da976d1678886322de41dfa48a1a1eb1cd5b42e27154c4e751746",
+    "patch": "patches/FormLister/changes.mbox",
+    "patchSHA256": "539b8d07c3d0535025797fecaf563c8318adb39cb8bb08d9966a2c8e1a3ab3a4",
+    "releaseCandidateOnly": false
+  },
+  {
+    "package": "formresults",
+    "upstream": "https://github.com/evocms-community/formresults.git",
+    "base": "97e25f84cf2a9b8e620695db0dd2df576f2cc966",
+    "commit": "75d2621a8fa045da828dbeaf87bcc5700f094d4d",
+    "sourceArchive": "formresults-75d2621a8fa0.zip",
+    "sourceArchiveSHA256": "5cbe99e8148637a83c9a421268c5e997585cd99dceb8e64275dc810a0ef37f2a",
+    "patch": "patches/formresults/changes.mbox",
+    "patchSHA256": "b11d64b38cf8bdcebb57e58313888c7948ed7608614717b56b2bf63ee37525cd",
+    "releaseCandidateOnly": false
+  },
+  {
+    "package": "lesscompiler",
+    "upstream": "https://github.com/evocms-community/lesscompiler.git",
+    "base": "f15ad0fa372ea615a4186874384b6e095710f5d0",
+    "commit": "f342aeabb22b67659d9b44ed37ba31309384da34",
+    "sourceArchive": "lesscompiler-f342aeabb22b.zip",
+    "sourceArchiveSHA256": "46030f2913a1a5a1629eeb5bc014f0c6b0c478b5fe072f1af22af849b854a6ea",
+    "patch": "patches/lesscompiler/changes.mbox",
+    "patchSHA256": "30bd142e8b84831cc26440335664a7e91b9d83bf7d76c66b06b0db515caffda6",
+    "releaseCandidateOnly": false
+  },
+  {
+    "package": "commerce",
+    "upstream": "https://github.com/evocms-community/commerce.git",
+    "base": "2c7f73638669932c4af729b06c63b40d62c22dbc",
+    "commit": "373ea464c926f981a30ebb0d0d0e75f6ee4eee94",
+    "sourceArchive": "commerce-373ea464c926.zip",
+    "sourceArchiveSHA256": "e4709670eb4f16d1a6e95d94de24648845855488c4e80cbfcdbac508b8e32ba2",
+    "patch": "patches/commerce/changes.mbox",
+    "patchSHA256": "fa5f4b6037f3539fdcecd5e769349202b69bb21e5499536d18fc353f53ff7245",
+    "releaseCandidateOnly": false
+  },
+  {
+    "package": "commerce-cbr-currency-updater",
+    "upstream": "https://github.com/evocms-community/commerce-cbr-currency-updater.git",
+    "base": "88cf8d1062cbd533339463ddd32efcfcf01d044a",
+    "commit": "ad4c420b8047938d2270d41842df403c7244448f",
+    "sourceArchive": "commerce-cbr-currency-updater-ad4c420b8047.zip",
+    "sourceArchiveSHA256": "b65822d93bc518b3e615410d37d0877404ffd9524433c06a5119ec4a3e92275b",
+    "patch": "patches/commerce-cbr-currency-updater/changes.mbox",
+    "patchSHA256": "3c5bddb18b52ee0a0b4566c914672d9752329543cada53739bcafc3b8e1e9983",
+    "releaseCandidateOnly": false
+  },
+  {
+    "package": "commerce-payment-invoice",
+    "upstream": "https://github.com/evocms-community/commerce-payment-invoice.git",
+    "base": "2a69071a82804af7c7f695bece4bc570db75ecdd",
+    "commit": "c22201561d60e0b58a34fbbd0b681364e1aa449c",
+    "sourceArchive": "commerce-payment-invoice-c22201561d60.zip",
+    "sourceArchiveSHA256": "a99d7e048ecf77ed56fb72cfaeead63688c78228f5640986eb5ed450a9ab26e4",
+    "patch": "patches/commerce-payment-invoice/changes.mbox",
+    "patchSHA256": "188af310dde5456af3f984ca3228087a7b9593ad4dfea360019d683f52ac505d",
+    "releaseCandidateOnly": false
+  },
+  {
+    "package": "commerce-payment-robokassa",
+    "upstream": "https://github.com/evocms-community/commerce-payment-robokassa.git",
+    "base": "3d77d9c27b5bd960d64b16cfc6483a6567ff89c7",
+    "commit": "d668e2bd0ff99af34b0a12dc83f5552c785b9631",
+    "sourceArchive": "commerce-payment-robokassa-d668e2bd0ff9.zip",
+    "sourceArchiveSHA256": "5cde86b7806fbc9b8aeb85b48bb1ae335009ec40ab766dc4da4574c868abec3b",
+    "patch": "patches/commerce-payment-robokassa/changes.mbox",
+    "patchSHA256": "43f29256de833fd0e582f7de2a77b8da8277f68029225caa5f9a5c081abfcf57",
+    "releaseCandidateOnly": false
+  },
+  {
+    "package": "commerce-payment-yookassa",
+    "upstream": "https://github.com/evocms-community/commerce-payment-yookassa.git",
+    "base": "258ba279380b13870c71851e3d6fadf26aa2cd97",
+    "commit": "3850f774635ec719cfea5f43da7ad31fdf7df31a",
+    "sourceArchive": "commerce-payment-yookassa-3850f774635e.zip",
+    "sourceArchiveSHA256": "bcac6021b23b275f7825fa1ac443a05de30bf6764414b7fe5d629e86f2c05210",
+    "patch": "patches/commerce-payment-yookassa/changes.mbox",
+    "patchSHA256": "915162b73e6a03ae8c989c010b02795520cb16673f69c577411ba2aa505d7fef",
+    "releaseCandidateOnly": false
+  },
+  {
+    "package": "clientsettings",
+    "upstream": "https://github.com/evocms-community/clientsettings.git",
+    "base": "1aedd88e66b258f3b05549ed7f865fc2b89d7254",
+    "commit": "80d4221b6299a4c4713742a9453ddc5704d540f6",
+    "sourceArchive": "clientsettings-80d4221b6299.zip",
+    "sourceArchiveSHA256": "7a7bfc2706012df8ddd831d57b714ed89830addd1d97af5205db3c90c73da2e4",
+    "patch": "patches/clientsettings/changes.mbox",
+    "patchSHA256": "b2c9109f8fa2ae27b8104749e27a3eb7f266e495dfc3a04dfe74eb8bc8d361a0",
+    "releaseCandidateOnly": true
+  },
+  {
+    "package": "evocms-clientsettings",
+    "upstream": "https://github.com/evocms-community/evocms-clientsettings.git",
+    "base": "4009a3676cc4a37c88e7a0dcc4a5faf82bb31df0",
+    "commit": "bb44e06e70f8358ad39fee1331650c2f12322860",
+    "sourceArchive": "evocms-clientsettings-bb44e06e70f8.zip",
+    "sourceArchiveSHA256": "56f9b5f165e4a4de968ee4d6be2180d95b33309ce804b01ff115e721c04d7932",
+    "patch": "patches/evocms-clientsettings/changes.mbox",
+    "patchSHA256": "8c42fd370ac14b68602ba85a88a01285a71feb74084c4363e447d59e18f57522",
+    "releaseCandidateOnly": false
+  },
+  {
+    "package": "evocms-directory",
+    "upstream": "https://github.com/evocms-community/evocms-directory.git",
+    "base": "d326db7d6c844dd98ee3de45a58821a78dbb09bb",
+    "commit": "f5156896b25b25e58bf4507520f443ec6a5ebb00",
+    "sourceArchive": "evocms-directory-f5156896b25b.zip",
+    "sourceArchiveSHA256": "9647ccd4ab098eeadcbbcd911d4b9655f42c5e037aa9139154950350b6d8f3e3",
+    "patch": "patches/evocms-directory/changes.mbox",
+    "patchSHA256": "358886d777d6acb3ddc59dea9177c92ced64008d4e6cfd3482e7535e102d6392",
+    "releaseCandidateOnly": false
+  },
+  {
+    "package": "evocms-module-example",
+    "upstream": "https://github.com/evocms-community/evocms-module-example.git",
+    "base": "18fbdda112000c5436aa9448c9974b02a5b58639",
+    "commit": "0a870ea1bb7f0da6a907c7ef7f63f796a3a6fa39",
+    "sourceArchive": "evocms-module-example-0a870ea1bb7f.zip",
+    "sourceArchiveSHA256": "b352d86ddfb44050f8fdd7c410bcd3e72c8eefaf8a8b72513962fe10ccba5cac",
+    "patch": "patches/evocms-module-example/changes.mbox",
+    "patchSHA256": "35e00eca7b62427d27d160766452ddf6f190996615a241204c9b03471ab23468",
+    "releaseCandidateOnly": false
+  },
+  {
+    "package": "pagebuilder",
+    "upstream": "https://github.com/evocms-community/pagebuilder.git",
+    "base": "6676a6f55324bbaebb85911e0fa421a018b4a549",
+    "commit": "35541063ceee55e45ca9194eb4e3f5d3bc68b31f",
+    "sourceArchive": "pagebuilder-35541063ceee.zip",
+    "sourceArchiveSHA256": "c31a302d922169ab76a05866b3982e03f8c2702dd57a1a5ccc1ba0c3a0b82fbc",
+    "patch": "patches/pagebuilder/changes.mbox",
+    "patchSHA256": "0ed71aaf3e9a15ab3ade8fbf2605555f4288b46ac6bdd898cdd046b9bae91e32",
+    "releaseCandidateOnly": false
+  },
+  {
+    "package": "evocms-minify",
+    "upstream": "https://github.com/mnoskov/evocms-minify.git",
+    "base": "a2507cffcc75a631e3e78443801c78485ab8ac73",
+    "commit": "2feafaa261d3b115a2c73b600009d3c5f0adde5e",
+    "sourceArchive": "evocms-minify-2feafaa261d3.zip",
+    "sourceArchiveSHA256": "30e295175ce72012960a958d448da82ffc51b1d032e0e5a89f8534482c2d6eda",
+    "patch": "patches/evocms-minify/changes.mbox",
+    "patchSHA256": "c65e807a4c9881bed499b84097002d27f2897996a1d85cbd11c5280d5815710f",
+    "releaseCandidateOnly": false
+  }
+]

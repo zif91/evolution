@@ -29,7 +29,31 @@ class SqlServerConnector extends Connector implements ConnectorInterface
     {
         $options = $this->getOptions($config);
 
-        return $this->createConnection($this->getDsn($config), $config, $options);
+        $connection = $this->createConnection($this->getDsn($config), $config, $options);
+
+        $this->configureIsolationLevel($connection, $config);
+
+        return $connection;
+    }
+
+    /**
+     * Set the connection transaction isolation level.
+     *
+     * https://learn.microsoft.com/en-us/sql/t-sql/statements/set-transaction-isolation-level-transact-sql
+     *
+     * @param  \PDO  $connection
+     * @param  array  $config
+     * @return void
+     */
+    protected function configureIsolationLevel($connection, array $config)
+    {
+        if (! isset($config['isolation_level'])) {
+            return;
+        }
+
+        $connection->prepare(
+            "SET TRANSACTION ISOLATION LEVEL {$config['isolation_level']}"
+        )->execute();
     }
 
     /**
@@ -89,7 +113,8 @@ class SqlServerConnector extends Connector implements ConnectorInterface
     protected function getOdbcDsn(array $config)
     {
         return isset($config['odbc_datasource_name'])
-                    ? 'odbc:'.$config['odbc_datasource_name'] : '';
+            ? 'odbc:'.$config['odbc_datasource_name']
+            : '';
     }
 
     /**
@@ -108,7 +133,7 @@ class SqlServerConnector extends Connector implements ConnectorInterface
             $arguments['Database'] = $config['database'];
         }
 
-        if (isset($config['readonly'])) {
+        if ($config['readonly'] ?? false) {
             $arguments['ApplicationIntent'] = 'ReadOnly';
         }
 
@@ -160,7 +185,11 @@ class SqlServerConnector extends Connector implements ConnectorInterface
             $arguments['LoginTimeout'] = $config['login_timeout'];
         }
 
-        return $this->buildConnectString('sqlsrv', $arguments);
+        if (isset($config['authentication'])) {
+            $arguments['Authentication'] = $config['authentication'];
+        }
+
+        return $this->buildConnectString('sqlsrv', array_map($this->escapeSqlSrvDsnValue(...), $arguments));
     }
 
     /**
@@ -191,6 +220,21 @@ class SqlServerConnector extends Connector implements ConnectorInterface
         }
 
         return $config['host'].$separator.$config['port'];
+    }
+
+    /**
+     * Escape a value for the connection string.
+     *
+     * @param  mixed  $value
+     * @return mixed
+     */
+    protected function escapeSqlSrvDsnValue($value)
+    {
+        if (! is_string($value) || (! str_contains($value, ';') && ! str_contains($value, '}') && ! preg_match('/^\s|\s$/', $value))) {
+            return $value;
+        }
+
+        return '{'.str_replace('}', '}}', $value).'}';
     }
 
     /**

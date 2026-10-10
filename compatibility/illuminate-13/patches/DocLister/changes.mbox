@@ -1,0 +1,89 @@
+From 66b562191e07d8fdc9b479e833c68e7d0cfa12a2 Mon Sep 17 00:00:00 2001
+From: zif91 <zif91@users.noreply.github.com>
+Date: Fri, 9 Oct 2026 21:31:07 +0300
+Subject: [PATCH] fix(MODxAPI): adapt resource CRUD to modern and legacy
+ schemas
+
+---
+ assets/lib/MODxAPI/modResource.php | 24 ++++++++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
+
+diff --git a/assets/lib/MODxAPI/modResource.php b/assets/lib/MODxAPI/modResource.php
+index ecc9b7b..d89255c 100644
+--- a/assets/lib/MODxAPI/modResource.php
++++ b/assets/lib/MODxAPI/modResource.php
+@@ -150,6 +150,8 @@ class modResource extends MODxAPI
+      * @var DLCollection
+      */
+     private $managerUsers = null;
++    private $hiddenField = 'donthit';
++    private $userSettingsTable = 'web_user_settings';
+     /** @var array группы документов */
+     protected $groupIds = array();
+ 
+@@ -161,8 +163,17 @@ class modResource extends MODxAPI
+     public function __construct($modx, $debug = false)
+     {
+         parent::__construct($modx, $debug);
++        // Detect the actual resource schema, retaining support for older Evo.
++        $columns = $this->modx->db->getTableMetaData($this->makeTable('site_content'));
++        $modernSchema = isset($columns['hide_from_tree']);
++        if ($modernSchema) {
++            $this->hiddenField = 'hide_from_tree';
++            $this->userSettingsTable = 'user_settings';
++            $this->default_field['hide_from_tree'] = $this->default_field['donthit'];
++            unset($this->default_field['donthit']);
++        }
+         $this->get_TV();
+-        $uTable = $this->makeTable("manager_users");
++        $uTable = $this->makeTable($modernSchema ? 'users' : 'manager_users');
+         $aTable = $this->makeTable("user_attributes");
+         $query = "SELECT `u`.`id`, `a`.`email`, `u`.`username`  FROM " . $aTable . " as `a` LEFT JOIN " . $uTable . " as `u` ON `u`.`id`=`a`.`internalKey`";
+         $query = $this->query($query);
+@@ -303,6 +314,7 @@ class modResource extends MODxAPI
+      */
+     public function get($key)
+     {
++        $key = $this->resourceField($key);
+         $out = parent::get($key);
+         if (isset($this->tv[$key])) {
+             $tpl = $this->get('template');
+@@ -324,9 +336,11 @@ class modResource extends MODxAPI
+      */
+     public function set($key, $value)
+     {
++        $key = $this->resourceField($key);
+         if ((is_scalar($value) || $this->isTVarrayField($key) || $this->isJsonField($key)) && is_scalar($key) && ! empty($key)) {
+             switch ($key) {
+                 case 'donthit':
++                case 'hide_from_tree':
+                     $value = (int)((bool)$value);
+                     break;
+                 case 'parent':
+@@ -762,7 +776,7 @@ class modResource extends MODxAPI
+             (int)$this->modxConfig('unauthorized_page'),
+             (int)$this->modxConfig('site_unavailable_page')
+         );
+-        $data = $this->query("SELECT DISTINCT setting_value FROM {$this->makeTable('web_user_settings')} WHERE `setting_name`='login_home' AND `setting_value`!=''");
++        $data = $this->query("SELECT DISTINCT setting_value FROM {$this->makeTable($this->userSettingsTable)} WHERE `setting_name`='login_home' AND `setting_value`!=''");
+         $data = $this->modx->db->makeArray($data);
+         foreach ($data as $item) {
+             $ignore[] = (int)$item['setting_value'];
+@@ -805,8 +819,14 @@ class modResource extends MODxAPI
+      * @param $key
+      * @return bool
+      */
++    private function resourceField($key)
++    {
++        return ($key === 'donthit' || $key === 'hide_from_tree') ? $this->hiddenField : $key;
++    }
++
+     public function issetField($key)
+     {
++        $key = $this->resourceField($key);
+         return (array_key_exists($key, $this->default_field) || (array_key_exists($key, $this->tv) && $this->belongsToTemplate($this->tv[$key])));
+     }
+ 
+-- 
+2.23.0
+

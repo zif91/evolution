@@ -20,7 +20,7 @@
     }
   ],
   "require": {
-    "php": ">=8.1",
+    "php": "^8.3",
     "ext-SimpleXML": "*",
     "ext-dom": "*",
     "ext-iconv": "*",
@@ -29,40 +29,41 @@
     "ext-mbstring": "*",
     "lib-iconv": "*",
     "lib-libxml": "*",
-    "doctrine/dbal": "~2.3",
+    "doctrine/dbal": "^3.10",
     "phpoption/phpoption": "*",
     "vlucas/phpdotenv": "^5.2",
     "guzzlehttp/guzzle": "^7.0.1",
     "composer/composer": "*",
-    "illuminate/cache": "8.*",
-    "illuminate/redis": "8.*",
-    "illuminate/config": "8.*",
-    "illuminate/console": "8.*",
-    "illuminate/container": "8.*",
-    "illuminate/database": "8.*",
-    "illuminate/events": "8.*",
-    "illuminate/filesystem": "8.*",
-    "illuminate/log": "8.*",
-    "illuminate/pagination": "8.*",
-    "illuminate/routing": "8.*",
-    "illuminate/support": "8.*",
-    "illuminate/translation": "8.*",
-    "illuminate/view": "8.*",
-    "illuminate/validation": "8.*",
-    "illuminate/http": "8.*",
-    "league/flysystem": "^1.0.8",
+    "illuminate/cache": "^13.0",
+    "illuminate/redis": "^13.0",
+    "illuminate/config": "^13.0",
+    "illuminate/console": "^13.0",
+    "illuminate/container": "^13.0",
+    "illuminate/database": "^13.0",
+    "illuminate/events": "^13.0",
+    "illuminate/filesystem": "^13.0",
+    "illuminate/log": "^13.0",
+    "illuminate/pagination": "^13.0",
+    "illuminate/routing": "^13.0",
+    "illuminate/support": "^13.0",
+    "illuminate/translation": "^13.0",
+    "illuminate/view": "^13.0",
+    "illuminate/validation": "^13.0",
+    "illuminate/http": "^13.0",
+    "league/flysystem": "^3.0",
     "phpmailer/phpmailer": "6.*",
     "tracy/tracy": "2.10.*",
     "wikimedia/composer-merge-plugin": "2.*",
-    "symfony/process": "^5.1",
+    "symfony/process": "^7.4 || ^8.0",
     "dmitry-suffi/redis-session-handler": "*",
     "rosell-dk/webp-convert": "*",
     "predis/predis": "*",
     "james-heinrich/phpthumb": "*",
     "evocms-services/user-manager": "1.*",
-    "evocms-services/document-manager": "1.*",
+    "evocms-services/document-manager": "dev-integration/illuminate-13#c7d323675911e889dfa7ba4cb4d1b6a08132e937",
     "evolution-cms/salo": "1.*",
-    "pathologic/modxapi": "1.*"
+    "pathologic/modxapi": "1.*",
+    "league/flysystem-local": "^3.0"
   },
   "require-dev": {
     "roave/security-advisories": "dev-master"
@@ -77,6 +78,9 @@
     "vendor-dir": "vendor",
     "allow-plugins": {
       "wikimedia/composer-merge-plugin": true
+    },
+    "platform": {
+      "php": "8.3.0"
     }
   },
   "extra": {
@@ -131,5 +135,18 @@
     "source": "https://github.com/evocms-community/evolution/",
     "docs": "http://docs.evo.im",
     "telegram": "https://t.me/evo_cms"
-  }
+  },
+  "repositories": [
+    {
+      "type": "path",
+      "url": "packages/salo",
+      "options": {
+        "symlink": false
+      }
+    },
+    {
+      "type": "git",
+      "url": "https://github.com/zif91/DocumentManager"
+    }
+  ]
 }

@@ -2,8 +2,8 @@
 
 namespace Illuminate\View\Concerns;
 
-use Countable;
 use Illuminate\Support\Arr;
+use Illuminate\Support\LazyCollection;
 
 trait ManagesLoops
 {
@@ -22,7 +22,9 @@ trait ManagesLoops
      */
     public function addLoop($data)
     {
-        $length = is_array($data) || $data instanceof Countable ? count($data) : null;
+        $length = is_countable($data) && ! $data instanceof LazyCollection
+            ? count($data)
+            : null;
 
         $parent = Arr::last($this->loopsStack);
 
@@ -32,7 +34,7 @@ trait ManagesLoops
             'remaining' => $length ?? null,
             'count' => $length,
             'first' => true,
-            'last' => isset($length) ? $length == 1 : null,
+            'last' => isset($length) ? $length === 1 : null,
             'odd' => false,
             'even' => true,
             'depth' => count($this->loopsStack) + 1,
@@ -52,7 +54,7 @@ trait ManagesLoops
         $this->loopsStack[$index] = array_merge($this->loopsStack[$index], [
             'iteration' => $loop['iteration'] + 1,
             'index' => $loop['iteration'],
-            'first' => $loop['iteration'] == 0,
+            'first' => $loop['iteration'] === 0,
             'odd' => ! $loop['odd'],
             'even' => ! $loop['even'],
             'remaining' => isset($loop['count']) ? $loop['remaining'] - 1 : null,

@@ -1,0 +1,101 @@
+From 4a5c7045c71196112736f180ec1bf6c34c5ef1ab Mon Sep 17 00:00:00 2001
+From: zif91 <zif91@users.noreply.github.com>
+Date: Fri, 9 Oct 2026 21:31:13 +0300
+Subject: [PATCH 1/3] Declare renderer language property for PHP 8.3 and 8.4
+
+---
+ assets/plugins/commerce/src/Module/Renderer.php | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/assets/plugins/commerce/src/Module/Renderer.php b/assets/plugins/commerce/src/Module/Renderer.php
+index 7105e19..04e89a0 100644
+--- a/assets/plugins/commerce/src/Module/Renderer.php
++++ b/assets/plugins/commerce/src/Module/Renderer.php
+@@ -8,6 +8,7 @@ class Renderer
+ 
+     private $modx;
+     private $module;
++    protected $lang;
+ 
+     protected $block;
+     protected $blocks = [];
+-- 
+2.23.0
+
+
+From f7c8f7777273080cd1f8876fb3eec68c7271e9e6 Mon Sep 17 00:00:00 2001
+From: zif91 <zif91@users.noreply.github.com>
+Date: Fri, 9 Oct 2026 21:31:13 +0300
+Subject: [PATCH 2/3] Acknowledge persisted payments without repeating payment
+ side effects
+
+---
+ .../plugins/commerce/src/Processors/OrdersProcessor.php   | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/assets/plugins/commerce/src/Processors/OrdersProcessor.php b/assets/plugins/commerce/src/Processors/OrdersProcessor.php
+index f434e04..17f785d 100644
+--- a/assets/plugins/commerce/src/Processors/OrdersProcessor.php
++++ b/assets/plugins/commerce/src/Processors/OrdersProcessor.php
+@@ -808,8 +808,8 @@ class OrdersProcessor implements \Commerce\Interfaces\Processor
+         $commerce = ci()->commerce;
+ 
+         if (is_array($payment_id) && !empty($payment_id['id']) && !empty($payment_id['order_id'])) {
+-            $payment    = $payment_id;
+-            $payment_id = $payment['id'];
++            $payment_id = $payment_id['id'];
++            $payment = $this->loadPayment($payment_id);
+         } else {
+             $payment = $this->loadPayment($payment_id);
+         }
+@@ -819,7 +819,9 @@ class OrdersProcessor implements \Commerce\Interfaces\Processor
+         }
+ 
+         if (!empty($payment['paid'])) {
+-            throw new Exception('Payment ' . print_r($payment_id, true) . ' already paid!');
++            // Payment providers retry successful notifications. Acknowledge the
++            // persisted result without repeating status, history or email work.
++            return true;
+         }
+ 
+         $order_id = $payment['order_id'];
+-- 
+2.23.0
+
+
+From 373ea464c926f981a30ebb0d0d0e75f6ee4eee94 Mon Sep 17 00:00:00 2001
+From: zif91 <zif91@users.noreply.github.com>
+Date: Fri, 9 Oct 2026 21:44:25 +0300
+Subject: [PATCH 3/3] Normalize order total and payment history to default
+ currency
+
+---
+ assets/plugins/commerce/src/Processors/OrdersProcessor.php | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/assets/plugins/commerce/src/Processors/OrdersProcessor.php b/assets/plugins/commerce/src/Processors/OrdersProcessor.php
+index 17f785d..cad013b 100644
+--- a/assets/plugins/commerce/src/Processors/OrdersProcessor.php
++++ b/assets/plugins/commerce/src/Processors/OrdersProcessor.php
+@@ -839,7 +839,8 @@ class OrdersProcessor implements \Commerce\Interfaces\Processor
+ 
+         $db->update(['paid' => 1], $this->tablePayments, "`id` = '" . intval($payment_id) . "'");
+         $total = $this->getOrderPaymentsAmount($order_id);
+-        $fullyPaid = $total >= $order['amount'] || abs($total - $order['amount']) < 0.01;
++        $orderAmount = ci()->currency->convertToDefault($order['amount'], $order['currency']);
++        $fullyPaid = $total >= $orderAmount || abs($total - $orderAmount) < 0.01;
+ 
+         $tpl = ci()->tpl;
+ 
+@@ -857,7 +858,7 @@ class OrdersProcessor implements \Commerce\Interfaces\Processor
+ 
+         $comment = $tpl->parseChunk($history, [
+             'order'  => $order,
+-            'amount' => ci()->currency->format($amount),
++            'amount' => ci()->currency->format($amount, ci()->currency->getDefaultCurrencyCode()),
+         ]);
+ 
+         if (!empty($prevLangCode)) {
+-- 
+2.23.0
+
