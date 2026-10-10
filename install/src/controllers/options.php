@@ -12,44 +12,28 @@ switch ($installMode) {
         break;
     case 1:
         if (is_file(EVO_CORE_PATH . 'custom/config/database/connections/default.php')) {
-            $db_config = include_once EVO_CORE_PATH . 'custom/config/database/connections/default.php';
+            $db_config = include EVO_CORE_PATH . 'custom/config/database/connections/default.php';
         } else {
-            $db_config = include_once EVO_CORE_PATH . 'config/database/connections/default.php';
+            $db_config = include EVO_CORE_PATH . 'config/database/connections/default.php';
         }
 
         $database_collation = $db_config['collation'];
         $database_connection_charset = $db_config['charset'];
-        if (@$conn = mysqli_connect($db_config['host'], $db_config['username'], $db_config['password'], '',
-            $db_config['port'] ?? null
-        )) {
-            if (@mysqli_query($conn, 'USE `' . $db_config['database'] . '`')) {
-                if (!$rs = mysqli_query($conn, "show session variables like 'collation_database'")) {
-                    $rs = mysqli_query($conn, "show session variables like 'collation_server'");
-                }
-                if ($rs && $collation = mysqli_fetch_row($rs)) {
-                    $database_collation = trim($collation[1]);
-                }
+        try {
+            $dbh = new PDO(installerDatabaseDsn($db_config['driver'], $db_config['host'], $db_config['database'], $db_config['port'] ?? null), $db_config['username'], $db_config['password']);
+            if (empty($database_collation) && $db_config['driver'] === 'mysql') {
+                $database_collation = $dbh->query("SHOW VARIABLES LIKE 'collation_database'")->fetch(PDO::FETCH_NUM)[1];
             }
+        } catch (PDOException $e) {
+            echo '<p class="notok">' . $_lang['database_connection_failed'] . '</p>';
+            $_POST['installmode'] = 2;
+            require __DIR__ . '/connection.php';
+            return;
         }
-        if (empty($database_collation)) {
-            $database_collation = 'utf8mb4_general_ci';
-        }
-
-        $database_charset = substr($database_collation, 0, strpos($database_collation, '_'));
-        if (empty($database_connection_charset)) {
-            $database_connection_charset = $database_charset;
-        }
-
-        if (empty($database_connection_method)) {
-            $database_connection_method = 'SET CHARACTER SET';
-            if (function_exists('mysqli_set_charset')) {
-                mysqli_set_charset($conn, $database_connection_charset);
-            }
-
-        }
-        if ($database_connection_method != 'SET NAMES' && $database_connection_charset != $database_charset) {
-            $database_connection_method = 'SET NAMES';
-        }
+        $database_collation = $database_collation ?: 'utf8mb4_general_ci';
+        $database_charset = explode('_', $database_collation)[0];
+        $database_connection_charset = $database_connection_charset ?: $database_charset;
+        $database_connection_method = $db_config['method'] ?? 'SET NAMES';
 
         $_POST['database_name'] = $db_config['database'];
         $_POST['tableprefix'] = $db_config['prefix'];

@@ -794,3 +794,18 @@ function installerSiteUrl(array $server): string
 
     return $scheme . '://' . $server['HTTP_HOST'] . $baseUrlPath;
 }
+
+/** Build one PDO connection string for the wizard and its AJAX checks. */
+function installerDatabaseDsn(string $driver, string $host, string $database = '', $port = null): string
+{
+    if (!in_array($driver, ['mysql', 'pgsql'], true)) {
+        throw new InvalidArgumentException('Unsupported database driver.');
+    }
+    if (preg_match('/^([^:]+):(\d+)$/', $host, $parts)) {
+        $host = $parts[1];
+        $port = $parts[2];
+    }
+    return $driver . ':host=' . $host
+        . ($port !== null && $port !== '' ? ';port=' . (int) $port : '')
+        . ($database !== '' ? ';dbname=' . $database : '');
+}

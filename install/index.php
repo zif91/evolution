@@ -25,6 +25,7 @@ if (! defined('EVO_CORE_PATH')) {
         die('EVO_CORE_PATH is not defined');
     }
 }
+require_once 'src/bootstrap.php';
 require_once 'src/lang.php';
 require_once 'src/functions.php';
 

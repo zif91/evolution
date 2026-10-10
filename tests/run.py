@@ -9,6 +9,8 @@ root=Path(__file__).resolve().parents[1]
 (root/'reports').mkdir(exist_ok=True)
 results=[]
 for name, command, marker in [
+    ('installer-environment',['php','tests/installer-environment.php'],'INSTALLER_ENVIRONMENT_COMPLETE 9 checks'),
+    ('installer-url',['php','tests/installer-url.php'],'INSTALLER_URL_COMPLETE 8'),
     ('vendor-integrity',['php','tests/vendor-integrity.php'],'VENDOR_INTEGRITY_OK'),
     ('application-translation',['php','tests/application-translation.php'],'APPLICATION_TRANSLATION_COMPLETE 6 checks'),
     ('classes',['php','tests/load-classes.php'],'CLASS_LOAD_OK'),

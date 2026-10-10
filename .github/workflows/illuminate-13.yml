@@ -22,7 +22,9 @@ jobs:
           extensions: pdo_mysql, gd, mbstring, xml, zip, curl, iconv
           coverage: none
       - name: Check native installer URI and Symfony request creation
-        run: php tests/installer-url.php
+        run: |
+          php tests/installer-url.php
+          php tests/installer-environment.php
       - name: Check dependency integrity and translation provider contract
         run: |
           php tests/vendor-integrity.php

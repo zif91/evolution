@@ -21,8 +21,8 @@ if ($installMode === 0) {
         $upgradeable = 0;
     } else {
         // Include the file so we can test its validity
-        $db_config = include_once $configFile;
-        $database_server = $db_config['host'];
+        $db_config = include $configFile;
+        $database_server = $db_config['host'] . (!empty($db_config['port']) ? ':' . $db_config['port'] : '');
         $database_collation = $db_config['collation'];
         $database_connection_method = $db_config['method'];
         $database_connection_charset = $db_config['charset'];
@@ -32,9 +32,9 @@ if ($installMode === 0) {
         if (isset($db_config['database'])) {
             $database_name = trim($db_config['database'], '`');
             try {
-                $conn = mysqli_connect($db_config['host'], $db_config['username'], $db_config['password'], '', isset($db_config['port']) ? $db_config['port'] : null);
-                $result = mysqli_select_db($conn, $database_name);
-            } catch (Exception $e) {
+                $conn = new PDO(installerDatabaseDsn($db_config['driver'], $db_config['host'], $database_name, $db_config['port'] ?? null), $db_config['username'], $db_config['password']);
+                $result = true;
+            } catch (PDOException $e) {
                 $conn = false;
                 $result = false;
             }
@@ -49,21 +49,10 @@ if ($installMode === 0) {
     }
 }
 
-// check the database collation if not specified in the configuration
-if ($upgradeable && (!isset($database_connection_charset) || empty($database_connection_charset))) {
-    if (!$rs = mysqli_query($conn, "show session variables like 'collation_database'")) {
-        $rs = mysqli_query($conn, "show session variables like 'collation_server'");
-    }
-    if ($rs && $collation = mysqli_fetch_row($rs)) {
-        $database_collation = $collation[1];
-    }
-    if (empty($database_collation)) {
-        $database_collation = 'utf8mb4_general_ci';
-    }
-    $database_charset = substr($database_collation, 0, strpos($database_collation, '_'));
-    $database_connection_charset = $database_charset;
-} else {
-    $database_collation = 'utf8mb4_general_ci';
+// Preserve existing settings. The connection screen can choose another collation.
+$database_collation = $database_collation ?? 'utf8mb4_general_ci';
+if (empty($database_connection_charset)) {
+    $database_connection_charset = explode('_', $database_collation)[0];
 }
 
 // determine the database connection method if not specified in the configuration

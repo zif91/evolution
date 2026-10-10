@@ -1,130 +1,86 @@
 <?php
 
-$host = $_POST['host'];
-$uid = $_POST['uid'];
-$pwd = $_POST['pwd'];
-$installMode = $_POST['installMode'];
-
-$output = $_lang['status_checking_database'];
-$h = explode(':', $host, 2);
-$database_collation = $_POST['database_collation'];
-$database_connection_method = $_POST['database_connection_method'];
-$database_charset = substr($database_collation, 0, strpos($database_collation, '_'));
+$installMode = (int) ($_POST['installMode'] ?? 0);
+$driver = $_POST['method'];
+$database = $_POST['database_name'];
 $tableprefix = $_POST['tableprefix'];
-if ($_POST['method'] == 'pgsql') {
-    if ($database_charset == 'utf8mb4') $database_charset = 'utf8';
-    $database_charset = mb_strtoupper($database_charset);
-}
-$dbexists = false;
-try {
-    $dbh = new PDO($_POST['method'] . ':host=' . $_POST['host'] . ';dbname=' . $_POST['database_name'], $_POST['uid'], $_POST['pwd']);
-    switch ($_POST['method']) {
-        case 'pgsql':
+$collation = $_POST['database_collation'];
+$charset = explode('_', $collation)[0];
+$output = $_lang['status_checking_database'];
 
-            $result = $dbh->query("SELECT * FROM pg_settings WHERE name='client_encoding'");
-            if ($result->errorCode() == 0) {
-                $data = $result->fetch();
-                if ($data['setting'] != $database_charset) {
-                    echo $output . '<span id="database_fail" style="color:#FF0000;">' . sprintf($_lang['status_failed_database_collation_does_not_match'], $data['setting']) . '</span>';
-                    exit();
-                }
-                $dbexists = true;
-                $result = $dbh->query("SELECT COUNT(*) FROM {$tableprefix}site_content");
+$fail = static function (string $message) use ($output) {
+    echo $output . '<span id="database_fail" style="color:#FF0000;">'
+        . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . '</span>';
+};
+$pass = static function (string $message) use ($output) {
+    echo $output . '<span id="database_pass" style="color:#80c000;">' . $message . '</span>';
+};
 
-                if ($dbh->errorCode() == 0) {
-                    echo $output . '<span id="database_fail" style="color:#FF0000;">' . $_lang['status_failed_table_prefix_already_in_use'] . '</span>';
-                    exit();
-                }
-            } else {
-                echo $output . '<span id="database_fail" style="color:#FF0000;">' . $_lang['status_failed'] . ' ' . print_r($result->errorInfo(), true) . '</span>';
-                exit();
-            }
-            break;
-        case 'mysql':
-            $result = $dbh->query("show variables like 'collation_database'");
-            if ($result->errorCode() == 0) {
-                $data = $result->fetch();
-
-                if ($data['Value'] != $database_collation) {
-
-                    echo $output . '<span id="database_fail" style="color:#FF0000;">' . sprintf($_lang['status_failed_database_collation_does_not_match'], $data['1']) . '</span>';
-                    exit();
-                }
-                $dbexists = true;
-                $result = $dbh->query("SELECT COUNT(*) FROM {$tableprefix}site_content");
-
-                if ($dbh->errorCode() == 0) {
-                    echo $output . '<span id="database_fail" style="color:#FF0000;">' . $_lang['status_failed_table_prefix_already_in_use'] . '</span>';
-                    exit();
-                }
-                $result = $dbh->query("SELECT SCHEMA_NAME
-                      FROM INFORMATION_SCHEMA.SCHEMATA
-                     WHERE SCHEMA_NAME = '" . $_POST['database_name'] . "'");
-                if ($dbh->errorCode() == 0) {
-                    $data = $result->fetch();
-                    if (isset($data['SCHEMA_NAME']) && $data['SCHEMA_NAME'] == $_POST['database_name']) {
-                        echo $output . '<span id="database_pass" style="color:#80c000;"> ' . $_lang['status_passed'] . '</span>';
-                        exit();
-                    }
-                }
-            } else {
-                echo $output . '<span id="database_fail" style="color:#FF0000;">' . $_lang['status_failed'] . ' ' . print_r($result->errorInfo(), true) . '</span>';
-                exit();
-            }
-            break;
-    }
-} catch (PDOException $e) {
-    if (!stristr($e->getMessage(), 'database "' . $_POST['database_name'] . '" does not exist') && !stristr($e->getMessage(), 'Unknown database \'' . $_POST['database_name'] . '\'') && !stristr($e->getMessage(), 'Base table or view not found')) {
-        echo $output . '<span id="database_fail" style="color:#FF0000;">' . $_lang['status_failed'] . ' ' . $e->getMessage() . '</span>';
-        exit();
-    }
-}
-
-if($dbexists) {
-    echo $output . '<span id="database_pass" style="color:#80c000;"> ' . $_lang['status_passed'] . '</span>';
-    exit();
+if (!in_array($installMode, [0, 1, 2], true)
+    || !preg_match('/^[a-zA-Z0-9_]*$/D', $tableprefix)
+    || !preg_match('/^[a-zA-Z0-9_]+$/D', $collation)) {
+    $fail($_lang['status_failed']);
+    return;
 }
 
 try {
-    $dbh = new PDO($_POST['method'] . ':host=' . $_POST['host'] . ';', $_POST['uid'], $_POST['pwd']);
-
-
-    switch ($_POST['method']) {
-        case 'pgsql':
-
-            try {
-                $dbh->query('CREATE DATABASE "' . $_POST['database_name'] . '" ENCODING \'' . $database_charset . '\';');
-                if ($dbh->errorCode() > 0) {
-                    if (stristr($dbh->errorInfo()[2], 'already exists') === false) {
-                        $output .= '<span id="database_fail" style="color:#FF0000;">' . $_lang['status_failed_could_not_create_database'] . ' ' . print_r($dbh->errorInfo(), true) . '</span>';
-                    }
-                }
-
-            } catch (Exception $exception) {
-                echo $exception->getMessage();
-            }
-
-            break;
-        case 'mysql':
-            $query = 'CREATE DATABASE IF NOT EXISTS `' . $_POST['database_name'] . '` CHARACTER SET ' . $database_charset . ' COLLATE ' . $database_collation . ";";
-            if (!$dbh->query($query)) {
-                $output .= '<span id="database_fail" style="color:#FF0000;">' . $_lang['status_failed_could_not_create_database'] . '</span>';
-                echo $output;
-                exit();
-            } else {
-                $output .= '<span id="database_pass" style="color:#80c000;">' . $_lang['status_passed_database_created'] . '</span>';
-                echo $output;
-                exit();
-            }
-            break;
-    }
-
-    echo $output . '<span id="database_pass" style="color:#80c000;"> ' . $_lang['status_passed'] . '</span>';
-    exit();
+    $dbh = new PDO(installerDatabaseDsn($driver, $_POST['host'], $database), $_POST['uid'], $_POST['pwd']);
 } catch (PDOException $e) {
-
-    echo $output . '<span id="database_fail" style="color:#FF0000;">' . $_lang['status_failed'] . ' ' . $e->getMessage() . '</span>';
-
+    // An upgrade must never silently create a different, empty database.
+    $missingDatabase = ($driver === 'mysql' && ($e->errorInfo[1] ?? null) === 1049)
+        || ($driver === 'pgsql' && $e->getCode() === '3D000');
+    if ($installMode !== 0 || !$missingDatabase) {
+        $fail($_lang['status_failed'] . ' ' . $e->getMessage());
+        return;
+    }
+    try {
+        $dbh = new PDO(installerDatabaseDsn($driver, $_POST['host']), $_POST['uid'], $_POST['pwd']);
+        if ($driver === 'mysql') {
+            $quotedDatabase = '`' . str_replace('`', '``', $database) . '`';
+            $dbh->exec("CREATE DATABASE {$quotedDatabase} CHARACTER SET {$charset} COLLATE {$collation}");
+        } else {
+            $quotedDatabase = '"' . str_replace('"', '""', $database) . '"';
+            $encoding = $charset === 'utf8mb4' ? 'UTF8' : strtoupper($charset);
+            $dbh->exec('CREATE DATABASE ' . $quotedDatabase . ' ENCODING ' . $dbh->quote($encoding));
+        }
+        $pass($_lang['status_passed_database_created']);
+    } catch (PDOException $e) {
+        $fail($_lang['status_failed_could_not_create_database'] . ' ' . $e->getMessage());
+    }
+    return;
 }
 
-echo $output;
+try {
+    if ($driver === 'mysql') {
+        $actualCollation = $dbh->query("SHOW VARIABLES LIKE 'collation_database'")->fetch(PDO::FETCH_NUM)[1];
+        if ($actualCollation !== $collation && $_POST['database_connection_method'] !== 'SET NAMES') {
+            $fail(sprintf($_lang['status_failed_database_collation_does_not_match'], $actualCollation));
+            return;
+        }
+    } else {
+        $actualCharset = $dbh->query('SHOW client_encoding')->fetchColumn();
+        $expectedCharset = $charset === 'utf8mb4' ? 'UTF8' : strtoupper($charset);
+        if (strtoupper($actualCharset) !== $expectedCharset) {
+            $fail(sprintf($_lang['status_failed_database_collation_does_not_match'], $actualCharset));
+            return;
+        }
+    }
+    try {
+        $dbh->query("SELECT 1 FROM {$tableprefix}site_content LIMIT 1");
+        $tableExists = true;
+    } catch (PDOException $e) {
+        if (!in_array($e->getCode(), ['42S02', '42P01'], true)) {
+            throw $e;
+        }
+        $tableExists = false;
+    }
+    if ($installMode === 0 && $tableExists) {
+        $fail($_lang['status_failed_table_prefix_already_in_use']);
+    } elseif ($installMode !== 0 && !$tableExists) {
+        $fail($_lang['table_prefix_not_exist']);
+    } else {
+        $pass($_lang['status_passed']);
+    }
+} catch (PDOException $e) {
+    $fail($_lang['status_failed'] . ' ' . $e->getMessage());
+}

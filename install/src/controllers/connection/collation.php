@@ -6,7 +6,7 @@ $pwd = $_POST['pwd'];
 
 
 try {
-    $dbh = new PDO($_POST['method'] . ':host=' . $_POST['host'] , $_POST['uid'], $_POST['pwd']);
+    $dbh = new PDO(installerDatabaseDsn($_POST['method'], $_POST['host']) , $_POST['uid'], $_POST['pwd']);
     $output = '<select id="database_collation" name="database_collation">';
 
     switch ($_POST['method']) {
